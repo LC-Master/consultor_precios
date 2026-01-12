@@ -1,34 +1,63 @@
 'use client'
 
-import { useState, type ChangeEvent } from "react";
+import Image from "next/image";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+import ms, { type StringValue } from "ms";
 import { consultarArticulo } from "./actions/consultar-articulo";
-type Product = {
-  Bloqueado: boolean;
-  CodArticulo: number;
-  CodBarra: number;
-  Descripcion: string;
-  Iva: number;
-  NomProm: string;
-  PorcDesc: number;
-  PrecioBase: number;
-  PrecioBaseProm: number;
-  PrecioIVAProm: number;
-  PrecioIva: number;
-  PrecioRef: number;
-  PrecioRefProm: number;
-  Tasa: number;
-  TasaEuro: number;
+import type { Product } from "@/types/product.type";
+import Product1Json from "../public/product.json";
+import Loading from "@/components/ui/Loading";
+
+const Product1 = Product1Json as Product;
+
+function normalizeProduct(result: unknown): Product | null {
+  if (!result) return null;
+  if (Array.isArray(result)) return (result[0] as Product) ?? null;
+  return result as Product;
+}
+
+function formatMoney(value: number | null | undefined, currency: "Bs" | "$" | "€" = "Bs") {
+  if (typeof value !== "number" || Number.isNaN(value)) return null;
+  return `${new Intl.NumberFormat("es-VE", { maximumFractionDigits: 2 }).format(value)} ${currency}`;
 }
 
 export default function ConsultorUI() {
+  const TIMEOUT = process.env.NEXT_PUBLIC_TIMEOUT_MS || "5s";
+  const TIMEOUT_MS = ms(TIMEOUT as StringValue);
   const [code, setCode] = useState("");
-  const [product, setProduct] = useState<Product | null>(null);
-  const [, setLoading] = useState(false);
+  const [product, setProduct] = useState<Product | null>(Product1);
+  const [loading, setLoading] = useState(false);
   const [, setError] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const activeProduct = product ?? Product1;
+
+  const pricing = useMemo(() => {
+    const hasPromo = Boolean(activeProduct?.NomProm) && (activeProduct?.PrecioIVAProm ?? 0) > 0;
+    const finalPrice = hasPromo
+      ? activeProduct.PrecioIVAProm
+      : (activeProduct.PrecioIva ?? 0) > 0
+        ? activeProduct.PrecioIva
+        : activeProduct.PrecioBase;
+    const originalPrice = hasPromo ? activeProduct.PrecioIva || activeProduct.PrecioBase : null;
+    const savings = hasPromo && typeof originalPrice === "number" && typeof finalPrice === "number"
+      ? Math.max(0, originalPrice - finalPrice)
+      : null;
+    return { hasPromo, finalPrice, originalPrice, savings };
+  }, [activeProduct]);
 
   const handlerCode = (e: ChangeEvent<HTMLInputElement>) => {
     setCode(e.target.value);
   }
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setCode("");
+      setProduct(null);
+    }, TIMEOUT_MS);
+
+    return () => clearTimeout(timer);
+  }, [code, product, TIMEOUT_MS]);
 
   const handleSearch = async () => {
     setLoading(true);
@@ -36,7 +65,7 @@ export default function ConsultorUI() {
     setProduct(null);
     try {
       const result = await consultarArticulo(code);
-      setProduct(result);
+      setProduct(normalizeProduct(result));
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -48,126 +77,175 @@ export default function ConsultorUI() {
     }
   }
 
-  const ProductView = ({ p }: { p: Product }) => (
-    <div className="flex-1 overflow-y-auto bg-slate-50 p-4 lg:p-6 animate-in slide-in-from-bottom-4 duration-500">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div className="lg:col-span-7 flex flex-col gap-6">
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-            <div className="p-6 sm:p-8">
-              <div className="flex justify-between items-start gap-4 mb-4">
-                <span className="inline-flex items-center rounded-md bg-slate-100 px-2.5 py-1 text-sm font-medium text-slate-600 ring-1 ring-inset ring-slate-500/10">
-                  Cod: {p.CodArticulo}
-                </span>
-                {p.Bloqueado && (
-                  <span className="inline-flex items-center rounded-md bg-rose-50 px-2.5 py-1 text-sm font-medium text-rose-700 ring-1 ring-inset ring-rose-600/20">
-                    Producto Bloqueado
-                  </span>
-                )}
-              </div>
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
 
-              <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 leading-tight mb-6">
-                {p.Descripcion}
-              </h2>
+  if (loading) {
+    return (
+      <Loading />
+    );
+  }
 
-              <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2">
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium text-slate-500 uppercase tracking-wide">Precio Público</span>
-                  <span className="text-5xl sm:text-6xl font-extrabold text-[#007a36] tracking-tight">
-                    {p.PrecioIva}
-                  </span>
-                </div>
+  return (
+    <main className="h-full w-full bg-linear-to-b from-slate-100 via-white to-slate-100 overflow-hidden">
+      <input
+        ref={inputRef}
+        type="text"
+        inputMode="numeric"
+        autoComplete="off"
+        value={code}
+        onChange={handlerCode}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") void handleSearch();
+        }}
+        className="sr-only caret-transparent"
+        aria-label="Escáner de código de barras"
+      />
 
-                {p.PorcDesc > 0 && (
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium text-slate-500 uppercase tracking-wide line-through">Antes</span>
-                    <span className="text-3xl font-semibold text-slate-400 line-through decoration-2">
-                      {p.PrecioRef}
-                    </span>
+      <div
+        className="h-full w-full box-border min-h-0 flex items-center justify-center p-3 sm:p-4 lg:p-6"
+        onClick={() => inputRef.current?.focus()}
+      >
+        <div className="w-full max-w-7xl max-h-full h-full bg-white rounded-3xl shadow-2xl ring-1 ring-slate-200 overflow-hidden flex flex-col">
+          <div className="p-4 sm:p-6 lg:p-8 flex-1 min-h-0 overflow-hidden">
+            <div className="min-h-0 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 items-center">
+              <div className="relative bg-linear-to-br from-slate-50 via-white to-slate-50 rounded-2xl p-6 flex items-center justify-center ring-1 ring-slate-200">
+                <Image
+                  src="/test.webp"
+                  alt="Imagen del producto"
+                  width={420}
+                  height={420}
+                  className="rounded-xl object-contain max-h-72 sm:max-h-80 w-auto"
+                  priority
+                />
+
+                {pricing.hasPromo ? (
+                  <div className="absolute top-4 right-4">
+                    <div className="rounded-full w-24 h-24 bg-linear-to-b from-locatel-medio to-locatel-oscuro text-white shadow-lg ring-4 ring-white/70 flex items-center justify-center">
+                      <div className="text-center leading-none">
+                        <div className="text-3xl font-extrabold tracking-tight">-{activeProduct.PorcDesc || 0}%</div>
+                        <div className="text-[11px] uppercase tracking-widest opacity-90 mt-0.5">Ahorro</div>
+                      </div>
+                    </div>
                   </div>
-                )}
+                ) : null}
               </div>
 
-              {p.PorcDesc > 0 && (
-                <div className="mt-6 inline-flex items-center gap-2 bg-yellow-100 text-yellow-800 px-4 py-2 rounded-lg font-bold text-lg">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 5L5 19" /><circle cx="6.5" cy="6.5" r="2.5" /><circle cx="17.5" cy="17.5" r="2.5" /></svg>
-                  Ahorras {p.PorcDesc}
+              <div className="min-w-0 min-h-0">
+                {activeProduct.NomProm ? (
+                  <span className="inline-flex items-center gap-2 bg-slate-50 border border-slate-200 text-locatel-medio px-3 py-1 rounded-full text-xs sm:text-sm mb-3">
+                    {activeProduct.NomProm}
+                  </span>
+                ) : null}
+
+                <h1 className="text-slate-900 font-semibold tracking-tight text-2xl sm:text-3xl leading-tight">
+                  {activeProduct.Descripcion || "Artículo"}
+                </h1>
+
+                <div className="mt-3 flex items-end gap-3 flex-wrap">
+                  {pricing.originalPrice ? (
+                    <span className="text-slate-400 line-through text-sm sm:text-base">
+                      {formatMoney(pricing.originalPrice, "Bs")}
+                    </span>
+                  ) : null}
+
+                  <div className="flex items-end gap-2">
+                    <span className="text-locatel-medio font-extrabold text-5xl sm:text-6xl leading-none">
+                      {formatMoney(pricing.finalPrice, "Bs") ?? "Sin precio"}
+                    </span>
+                    {(activeProduct.PrecioIva ?? 0) > 0 ? (
+                      <span className="text-slate-500 text-sm sm:text-base pb-1">IVA INC.</span>
+                    ) : null}
+                  </div>
                 </div>
-              )}
-            </div>
 
-            {p.NomProm && (
-              <div className="bg-[#007a36]/5 border-t border-[#007a36]/10 p-4 flex items-center gap-3">
-                <div className="bg-[#007a36] text-white p-2 rounded-full">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.91 8.84 8.56 2.23a1.93 1.93 0 0 0-1.81 0l-2.33 1.26-2.32-1.26a1.93 1.93 0 0 0-1.81 0L.26 8.84a1.93 1.93 0 0 0 0 1.79l1.58 2.9-1.58 2.9a1.93 1.93 0 0 0 0 1.79l6.25 3.42a1.93 1.93 0 0 0 1.81 0l2.32-1.26 2.33 1.26a1.93 1.93 0 0 0 1.81 0l6.25-3.42a1.93 1.93 0 0 0 0-1.79l-1.58-2.9 1.58-2.9a1.93 1.93 0 0 0 0-1.79Z" /></svg>
+                {pricing.savings ? (
+                  <div className="mt-3 text-sm text-locatel-naranja">
+                    Ahorras {formatMoney(pricing.savings, "Bs")}
+                  </div>
+                ) : null}
+
+                <div className="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div className="bg-slate-50 rounded-2xl p-4 ring-1 ring-slate-200">
+                    <div className="grid grid-cols-1 gap-3">
+                      <div>
+                        <div className="text-[11px] uppercase tracking-wide text-slate-400">Precio base</div>
+                        <div className="text-base font-semibold text-slate-800 truncate">
+                          {formatMoney(activeProduct.PrecioBase, "Bs") ?? "-"}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[11px] uppercase tracking-wide text-slate-400">Precio IVA</div>
+                        <div className="text-base font-semibold text-slate-800 truncate">
+                          {(activeProduct.PrecioIva ?? 0) > 0 ? formatMoney(activeProduct.PrecioIva, "Bs") : "-"}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-50 rounded-2xl p-4 ring-1 ring-slate-200">
+                    <div className="grid grid-cols-1 gap-3">
+                      <div>
+                        <div className="text-[11px] uppercase tracking-wide text-slate-400">Precio ref</div>
+                        <div className="text-base font-semibold text-slate-800 truncate">
+                          {formatMoney(activeProduct.PrecioRef, "$") ?? "-"}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[11px] uppercase tracking-wide text-slate-400">IVA</div>
+                        <div className="text-base font-semibold text-slate-800 truncate">
+                          {typeof activeProduct.Iva === "number" ? `${activeProduct.Iva}%` : "-"}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-50 rounded-2xl p-4 ring-1 ring-slate-200">
+                    <div className="grid grid-cols-1 gap-3">
+                      <div>
+                        <div className="text-[11px] uppercase tracking-wide text-slate-400">Base prom</div>
+                        <div className="text-base font-semibold text-slate-800 truncate">
+                          {(activeProduct.PrecioBaseProm ?? 0) > 0 ? formatMoney(activeProduct.PrecioBaseProm, "Bs") : "-"}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[11px] uppercase tracking-wide text-slate-400">IVA prom</div>
+                        <div className="text-base font-semibold text-slate-800 truncate">
+                          {(activeProduct.PrecioIVAProm ?? 0) > 0 ? formatMoney(activeProduct.PrecioIVAProm, "Bs") : "-"}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-50 rounded-2xl p-4 ring-1 ring-slate-200">
+                    <div className="grid grid-cols-1 gap-3">
+                      <div>
+                        <div className="text-[11px] uppercase tracking-wide text-slate-400">Ref prom</div>
+                        <div className="text-base font-semibold text-slate-800 truncate">
+                          {(activeProduct.PrecioRefProm ?? 0) > 0 ? formatMoney(activeProduct.PrecioRefProm, "$") : "-"}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[11px] uppercase tracking-wide text-slate-400">Código art</div>
+                        <div className="text-base font-semibold text-slate-800 truncate">
+                          {activeProduct.CodArticulo ? String(activeProduct.CodArticulo) : "-"}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <span className="font-medium text-[#007a36]">{p.NomProm}</span>
-              </div>
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <PriceCard label="Precio Base" value={p.PrecioBase} />
-            <PriceCard label="Precio Base Promo" value={p.PrecioBaseProm} highlight={p.PrecioBaseProm < p.PrecioBase} />
-            <PriceCard label="Precio IVA Promo" value={p.PrecioIVAProm} highlight={p.PrecioIVAProm < p.PrecioIva} />
-            <PriceCard label="Precio Ref Promo" value={p.PrecioRefProm} />
-          </div>
-        </div>
-
-        <div className="lg:col-span-5 flex flex-col gap-4">
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-            <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" /></svg>
-              Detalles Técnicos
-            </h3>
-            <div className="space-y-4">
-              <DetailRow label="Código de Barra" value={p.CodBarra} />
-              <DetailRow label="Tasa IVA" value={p.Iva} />
-              <DetailRow label="Tasa Cambio" value={p.Tasa} />
-              <DetailRow label="Tasa Euro" value={p.TasaEuro} />
-            </div>
-          </div>
-
-          <div className="bg-[#007a36] rounded-2xl shadow-sm p-6 text-white mt-auto">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-white/10 rounded-xl">
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2" /><path d="M17 3h2a2 2 0 0 1 2 2v2" /><path d="M21 17v2a2 2 0 0 1-2 2h-2" /><path d="M7 21H5a2 2 0 0 1-2-2v-2" /><rect width="10" height="6" x="7" y="9" rx="1" /></svg>
-              </div>
-              <div>
-                <p className="font-bold text-lg">¿Consultar otro?</p>
-                <p className="text-white/80 text-sm">Escanea el siguiente producto</p>
               </div>
             </div>
+          </div>
+
+          <div className="shrink-0 border-t border-slate-100 px-5 sm:px-8 py-3 text-xs sm:text-sm text-slate-500 flex flex-wrap gap-x-6 gap-y-2">
+            <span>CÓD BARRA: {activeProduct.CodBarra ? String(activeProduct.CodBarra) : "-"}</span>
+            <span>TASA: {formatMoney(activeProduct.Tasa, "$") ?? "-"}</span>
+            <span>TASA EUR: {formatMoney(activeProduct.TasaEuro, "€") ?? "-"}</span>
           </div>
         </div>
       </div>
-    </div>
-  );
-
-  const PriceCard = ({ label, value, highlight = false }: { label: string; value: number; highlight?: boolean }) => (
-    <div className={`p-4 rounded-xl border ${highlight ? 'bg-green-50 border-green-100' : 'bg-white border-slate-200'}`}>
-      <div className={`text-xs font-medium uppercase tracking-wide mb-1 ${highlight ? 'text-green-700' : 'text-slate-500'}`}>{label}</div>
-      <div className={`text-xl font-bold ${highlight ? 'text-green-800' : 'text-slate-900'}`}>{value}</div>
-    </div>
-  );
-
-  const DetailRow = ({ label, value }: { label: string; value: number }) => (
-    <div className="flex justify-between items-center py-2 border-b border-slate-100 last:border-0">
-      <span className="text-slate-500 text-sm">{label}</span>
-      <span className="font-medium text-slate-900">{value}</span>
-    </div>
-  );
-
-  return (
-    <main className="h-screen w-screen flex flex-col bg-slate-50 overflow-hidden">
-      <input
-        type="text"
-        className="text-black w-16"
-        value={code}
-        onChange={handlerCode}
-        onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }}
-      />
-      <button type="button" onClick={handleSearch}>buscar</button>
-      {product && <ProductView p={product} />}
     </main>
   );
 }

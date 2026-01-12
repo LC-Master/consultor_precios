@@ -4,5 +4,6 @@ declare module "bun" {
     API_KEY_CMS: string;
     DB_NAME: string;
     DATABASE_URL: string;
+    NEXT_PUBLIC_TIMEOUT_MS: StringValue;
   }
 }
