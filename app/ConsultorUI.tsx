@@ -109,8 +109,8 @@ export default function ConsultorUI() {
       >
         <div className="w-full max-w-7xl max-h-full h-full bg-white rounded-3xl shadow-2xl ring-1 ring-slate-200 overflow-hidden flex flex-col">
           <div className="p-4 sm:p-6 lg:p-8 flex-1 min-h-0 overflow-hidden">
-            <div className="min-h-0 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 items-center">
-              <div className="relative bg-linear-to-br from-slate-50 via-white to-slate-50 rounded-2xl p-6 flex items-center justify-center ring-1 ring-slate-200">
+            <div className="min-h-0 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 items-start">
+              <div className="relative bg-linear-to-br from-slate-50 via-white to-slate-50 rounded-2xl p-6 flex items-center justify-center  md:self-stretch">
                 <Image
                   src="/test.webp"
                   alt="Imagen del producto"
@@ -119,23 +119,12 @@ export default function ConsultorUI() {
                   className="rounded-xl object-contain max-h-72 sm:max-h-80 w-auto"
                   priority
                 />
-
-                {pricing.hasPromo ? (
-                  <div className="absolute top-4 right-4">
-                    <div className="rounded-full w-24 h-24 bg-linear-to-b from-locatel-medio to-locatel-oscuro text-white shadow-lg ring-4 ring-white/70 flex items-center justify-center">
-                      <div className="text-center leading-none">
-                        <div className="text-3xl font-extrabold tracking-tight">-{activeProduct.PorcDesc || 0}%</div>
-                        <div className="text-[11px] uppercase tracking-widest opacity-90 mt-0.5">Ahorro</div>
-                      </div>
-                    </div>
-                  </div>
-                ) : null}
               </div>
 
-              <div className="min-w-0 min-h-0">
+                <div className={`min-w-0 min-h-0 space-y-4 flex flex-col ${activeProduct?.NomProm ? "self-start items-start text-left" : "self-center items-center text-center justify-center"}`}>
                 {activeProduct.NomProm ? (
                   <span className="inline-flex items-center gap-2 bg-slate-50 border border-slate-200 text-locatel-medio px-3 py-1 rounded-full text-xs sm:text-sm mb-3">
-                    {activeProduct.NomProm}
+                  {activeProduct.NomProm}
                   </span>
                 ) : null}
 
@@ -143,99 +132,110 @@ export default function ConsultorUI() {
                   {activeProduct.Descripcion || "Artículo"}
                 </h1>
 
-                <div className="mt-3 flex items-end gap-3 flex-wrap">
+                <div className={`mt-2 flex items-end gap-3 flex-wrap ${activeProduct?.NomProm ? "" : "justify-center"}`}>
                   {pricing.originalPrice ? (
-                    <span className="text-slate-400 line-through text-sm sm:text-base">
-                      {formatMoney(pricing.originalPrice, "Bs")}
-                    </span>
+                  <span className="text-slate-400 line-through text-sm sm:text-base">
+                    {formatMoney(pricing.originalPrice, "Bs")}
+                  </span>
                   ) : null}
 
+                  <div className="flex items-end gap-3 flex-wrap">
                   <div className="flex items-end gap-2">
                     <span className="text-locatel-medio font-extrabold text-5xl sm:text-6xl leading-none">
-                      {formatMoney(pricing.finalPrice, "Bs") ?? "Sin precio"}
+                    {formatMoney(pricing.finalPrice, "Bs") ?? "Sin precio"}
                     </span>
                     {(activeProduct.PrecioIva ?? 0) > 0 ? (
-                      <span className="text-slate-500 text-sm sm:text-base pb-1">IVA INC.</span>
+                    <span className="text-slate-500 text-sm sm:text-base pb-1">IVA INC.</span>
                     ) : null}
+                  </div>
+
+                  {pricing.hasPromo ? (
+                    <div className="shrink-0 rounded-full w-16 h-16 sm:w-20 sm:h-20 bg-linear-to-b from-locatel-medio to-locatel-oscuro text-white shadow-lg ring-4 ring-white/70 flex items-center justify-center">
+                    <div className="text-center leading-none">
+                      <div className="text-2xl sm:text-3xl font-extrabold tracking-tight">-{activeProduct.PorcDesc || 0}%</div>
+                      <div className="text-[10px] sm:text-[11px] uppercase tracking-widest opacity-90 mt-0.5">Ahorro</div>
+                    </div>
+                    </div>
+                  ) : null}
                   </div>
                 </div>
 
                 {pricing.savings ? (
-                  <div className="mt-3 text-sm text-locatel-naranja">
-                    Ahorras {formatMoney(pricing.savings, "Bs")}
+                  <div className={`mt-2 text-sm text-locatel-naranja ${activeProduct?.NomProm ? "" : "text-center"}`}>
+                  Ahorras {formatMoney(pricing.savings, "Bs")}
                   </div>
                 ) : null}
 
-                <div className="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className={`mt-3 grid grid-cols-2 lg:grid-cols-4 gap-3 ${activeProduct?.NomProm ? "" : "justify-center"}`}>
                   <div className="bg-slate-50 rounded-2xl p-4 ring-1 ring-slate-200">
-                    <div className="grid grid-cols-1 gap-3">
-                      <div>
-                        <div className="text-[11px] uppercase tracking-wide text-slate-400">Precio base</div>
-                        <div className="text-base font-semibold text-slate-800 truncate">
-                          {formatMoney(activeProduct.PrecioBase, "Bs") ?? "-"}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-[11px] uppercase tracking-wide text-slate-400">Precio IVA</div>
-                        <div className="text-base font-semibold text-slate-800 truncate">
-                          {(activeProduct.PrecioIva ?? 0) > 0 ? formatMoney(activeProduct.PrecioIva, "Bs") : "-"}
-                        </div>
-                      </div>
+                  <div className="grid grid-cols-1 gap-3">
+                    <div>
+                    <div className="text-[11px] uppercase tracking-wide text-slate-400">Precio base</div>
+                    <div className="text-base font-semibold text-slate-800 truncate">
+                      {formatMoney(activeProduct.PrecioBase, "Bs") ?? "-"}
                     </div>
+                    </div>
+                    <div>
+                    <div className="text-[11px] uppercase tracking-wide text-slate-400">Precio IVA</div>
+                    <div className="text-base font-semibold text-slate-800 truncate">
+                      {(activeProduct.PrecioIva ?? 0) > 0 ? formatMoney(activeProduct.PrecioIva, "Bs") : "-"}
+                    </div>
+                    </div>
+                  </div>
                   </div>
 
                   <div className="bg-slate-50 rounded-2xl p-4 ring-1 ring-slate-200">
-                    <div className="grid grid-cols-1 gap-3">
-                      <div>
-                        <div className="text-[11px] uppercase tracking-wide text-slate-400">Precio ref</div>
-                        <div className="text-base font-semibold text-slate-800 truncate">
-                          {formatMoney(activeProduct.PrecioRef, "$") ?? "-"}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-[11px] uppercase tracking-wide text-slate-400">IVA</div>
-                        <div className="text-base font-semibold text-slate-800 truncate">
-                          {typeof activeProduct.Iva === "number" ? `${activeProduct.Iva}%` : "-"}
-                        </div>
-                      </div>
+                  <div className="grid grid-cols-1 gap-3">
+                    <div>
+                    <div className="text-[11px] uppercase tracking-wide text-slate-400">Precio ref</div>
+                    <div className="text-base font-semibold text-slate-800 truncate">
+                      {formatMoney(activeProduct.PrecioRef, "$") ?? "-"}
                     </div>
+                    </div>
+                    <div>
+                    <div className="text-[11px] uppercase tracking-wide text-slate-400">IVA</div>
+                    <div className="text-base font-semibold text-slate-800 truncate">
+                      {typeof activeProduct.Iva === "number" ? `${activeProduct.Iva}%` : "-"}
+                    </div>
+                    </div>
+                  </div>
                   </div>
 
                   <div className="bg-slate-50 rounded-2xl p-4 ring-1 ring-slate-200">
-                    <div className="grid grid-cols-1 gap-3">
-                      <div>
-                        <div className="text-[11px] uppercase tracking-wide text-slate-400">Base prom</div>
-                        <div className="text-base font-semibold text-slate-800 truncate">
-                          {(activeProduct.PrecioBaseProm ?? 0) > 0 ? formatMoney(activeProduct.PrecioBaseProm, "Bs") : "-"}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-[11px] uppercase tracking-wide text-slate-400">IVA prom</div>
-                        <div className="text-base font-semibold text-slate-800 truncate">
-                          {(activeProduct.PrecioIVAProm ?? 0) > 0 ? formatMoney(activeProduct.PrecioIVAProm, "Bs") : "-"}
-                        </div>
-                      </div>
+                  <div className="grid grid-cols-1 gap-3">
+                    <div>
+                    <div className="text-[11px] uppercase tracking-wide text-slate-400">Base prom</div>
+                    <div className="text-base font-semibold text-slate-800 truncate">
+                      {(activeProduct.PrecioBaseProm ?? 0) > 0 ? formatMoney(activeProduct.PrecioBaseProm, "Bs") : "-"}
                     </div>
+                    </div>
+                    <div>
+                    <div className="text-[11px] uppercase tracking-wide text-slate-400">IVA prom</div>
+                    <div className="text-base font-semibold text-slate-800 truncate">
+                      {(activeProduct.PrecioIVAProm ?? 0) > 0 ? formatMoney(activeProduct.PrecioIVAProm, "Bs") : "-"}
+                    </div>
+                    </div>
+                  </div>
                   </div>
 
                   <div className="bg-slate-50 rounded-2xl p-4 ring-1 ring-slate-200">
-                    <div className="grid grid-cols-1 gap-3">
-                      <div>
-                        <div className="text-[11px] uppercase tracking-wide text-slate-400">Ref prom</div>
-                        <div className="text-base font-semibold text-slate-800 truncate">
-                          {(activeProduct.PrecioRefProm ?? 0) > 0 ? formatMoney(activeProduct.PrecioRefProm, "$") : "-"}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-[11px] uppercase tracking-wide text-slate-400">Código art</div>
-                        <div className="text-base font-semibold text-slate-800 truncate">
-                          {activeProduct.CodArticulo ? String(activeProduct.CodArticulo) : "-"}
-                        </div>
-                      </div>
+                  <div className="grid grid-cols-1 gap-3">
+                    <div>
+                    <div className="text-[11px] uppercase tracking-wide text-slate-400">Ref prom</div>
+                    <div className="text-base font-semibold text-slate-800 truncate">
+                      {(activeProduct.PrecioRefProm ?? 0) > 0 ? formatMoney(activeProduct.PrecioRefProm, "$") : "-"}
                     </div>
+                    </div>
+                    <div>
+                    <div className="text-[11px] uppercase tracking-wide text-slate-400">Código art</div>
+                    <div className="text-base font-semibold text-slate-800 truncate">
+                      {activeProduct.CodArticulo ? String(activeProduct.CodArticulo) : "-"}
+                    </div>
+                    </div>
+                  </div>
                   </div>
                 </div>
-              </div>
+                </div>
             </div>
           </div>
 
