@@ -1,17 +1,24 @@
-export type Product = {
-  Bloqueado: boolean;
-  CodArticulo: number;
-  CodBarra: number;
-  Descripcion: string;
-  Iva: number;
-  NomProm: string;
-  PorcDesc: number;
-  PrecioBase: number;
-  PrecioBaseProm: number;
-  PrecioIVAProm: number;
-  PrecioIva: number;
-  PrecioRef: number;
-  PrecioRefProm: number;
-  Tasa: number;
-  TasaEuro: number;
-}
+export type IProduct = null | {
+  isBlocked: boolean;
+  barCode: number;
+  articleCode: number;
+  description: string;
+  prices: {
+    base: number;
+    tax: number;
+    priceWithTax: number;
+    referencePrice: number;
+  };
+  promotion: null | {
+    name: string;
+    basePrice: number;
+    priceWithTax: number;
+    referencePrice: number;
+    discountPercentage: number;
+    savings: number;
+  };
+  rate: {
+    dollar?: number;
+    euro?: number;
+  };
+};

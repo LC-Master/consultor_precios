@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import ms, { type StringValue } from "ms";
-import { consultarArticulo } from "./actions/consultar-articulo";
-import type { Product } from "@/types/product.type";
+import { checkPrice } from "./actions/checkPrice";
+import type { IProduct } from "@/types/product.type";
 import Loading from "@/components/ui/Loading";
 import ProductView from "@/components/ProductView";
 
@@ -11,11 +11,33 @@ export default function ConsultorUI() {
   const TIMEOUT = process.env.NEXT_PUBLIC_TIMEOUT_MS || "5s";
   const TIMEOUT_MS = ms(TIMEOUT as StringValue);
   const [code, setCode] = useState("");
-  const [product, setProduct] = useState<Product | null>(null);
+  const [product, setProduct] = useState<IProduct | null>(null);
   const [loading, setLoading] = useState(false);
   const [, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  console.log(product)
+  useEffect(() => {
+    const es = new EventSource('http://localhost:3000/api/events');
+
+    es.onopen = () => console.log("✅ Conectado a SSE");
+
+    es.onmessage = (e) => {
+      console.log("Llegó:", e.data);
+    };
+
+    es.addEventListener('dto:updated', (e) => {
+      console.log("❤️ Latido:", (e as MessageEvent).data);
+    });
+
+    es.onerror = (e) => {
+      console.error("❌ Error en SSE:", e);
+    };
+
+    return () => {
+      console.log("Cerrando conexión SSE...");
+      es.close();
+    };
+  }, []);
+
   const handlerCode = (e: ChangeEvent<HTMLInputElement>) => {
     setCode(e.target.value);
   }
@@ -34,15 +56,17 @@ export default function ConsultorUI() {
     setError(null);
     setProduct(null);
     try {
-      const result = await consultarArticulo(code);
-      setProduct(result as Product);
+      const result = await checkPrice(code);
+      setProduct(result);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
       } else {
         setError(String(err));
       }
+      console.log("error")
     } finally {
+      console.log("termine")
       setLoading(false);
     }
   }
@@ -69,7 +93,7 @@ export default function ConsultorUI() {
         onKeyDown={(e) => {
           if (e.key === "Enter") void handleSearch();
         }}
-        className="sr-only caret-transparent"
+        // className="sr-only caret-transparent"
         aria-label="Escáner de código de barras"
       />
       {product && <ProductView product={product} inputRef={inputRef} />}
