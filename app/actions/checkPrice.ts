@@ -1,9 +1,9 @@
 "use server";
 
 import { XMLParser } from "fast-xml-parser";
-import { checkPricesSchema } from "../schemas/checkPriceSchema";
 import { ActionCheckPriceErrors } from "../Errors/ActionCheckPriceErrors";
 import { IProduct } from "@/types/product.type";
+import { checkPricesSchema } from "../schemas/checkPriceSchema";
 
 const ENDPOINT_URL = process.env.URL_CONSULTA_PRECIO;
 

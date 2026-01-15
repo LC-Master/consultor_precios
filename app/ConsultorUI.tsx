@@ -16,7 +16,7 @@ export default function ConsultorUI() {
   const [, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
-    const es = new EventSource('http://localhost:3000/api/events');
+    const es = new EventSource(`${process.env.NEXT_PUBLIC_API_URL}`);
 
     es.onopen = () => console.log("✅ Conectado a SSE");
 
