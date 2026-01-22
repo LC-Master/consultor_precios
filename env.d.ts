@@ -6,5 +6,6 @@ declare module "bun" {
     DATABASE_URL: string;
     NEXT_PUBLIC_TIMEOUT_MS: StringValue;
     NEXT_PUBLIC_API_URL: string;
+    NEXT_PUBLIC_API_KEY_CDS:string;
   }
 }
