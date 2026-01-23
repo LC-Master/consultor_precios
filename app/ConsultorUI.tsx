@@ -9,7 +9,7 @@ import ProductView from "@/components/ProductView";
 // Importamos la herramienta para SSE con Headers
 
 export default function ConsultorUI() {
-  const TIMEOUT = process.env.NEXT_PUBLIC_TIMEOUT_MS || "25s";
+  const TIMEOUT = `${process.env.NEXT_PUBLIC_TIMEOUT_SECONDS}s` || "25s";
   const TIMEOUT_MS = ms(TIMEOUT as StringValue);
   const [code, setCode] = useState("");
   const [product, setProduct] = useState<IProduct | null>(null);
