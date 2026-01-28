@@ -1,10 +1,10 @@
 import { describe, expect, it } from "bun:test";
 import { checkPrice } from "../app/actions/checkPrice";
+import { ActionCheckPriceErrors } from "@/app/Errors/ActionCheckPriceErrors";
 
 describe("Action Tests", () => {
-  it("should return null for invalid barcode", async () => {
-    const result = await checkPrice("invalid-barcode");
-    expect(result).toBeNull();
+  it("should throw for invalid barcode", async () => {
+    return expect(checkPrice("invalid-barcode")).rejects.toThrowError(ActionCheckPriceErrors.INVALID_BARCODE);
   });
 
   it("should return product data for valid barcode", async () => {
@@ -15,15 +15,15 @@ describe("Action Tests", () => {
       articleCode: 2117612,
       description: "YUKERY NECTAR DE MANZANA PET 5",
       prices: {
-        base: 560.82,
+        base: 598.81,
         tax: 16,
-        priceWithTax: 650.55,
+        priceWithTax: 694.62,
         referencePrice: 1.97,
       },
       promotion: null,
       rate: {
-        dollar: 330.38,
-        euro: 384.33,
+        dollar: 352.71,
+        euro: 413.39,
       },
     });
   });
@@ -34,8 +34,7 @@ describe("Action Tests", () => {
   });
 
   it("should null when product not found", async () => {
-    const result = await checkPrice("0000000000000");
-    expect(result).toBeNull();
+    return expect(checkPrice("0000000000000")).rejects.toThrowError(ActionCheckPriceErrors.PRODUCT_NOT_FOUND);
   });
 
   it("should accept numeric barcode input", async () => {

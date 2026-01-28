@@ -4,5 +4,11 @@ declare module "bun" {
     NEXT_PUBLIC_TIMEOUT_SECONDS: StringValue;
     NEXT_PUBLIC_API_URL_CDS: string;
     NEXT_PUBLIC_API_KEY_CDS:string;
+    DATABASE_URL: string;
+    DB_USER: string;
+    DB_PASSWORD: string;
+    // DB_NAME: string;
+    DB_HOST: string;
+    DB_PORT: StringValue;
   }
 }
