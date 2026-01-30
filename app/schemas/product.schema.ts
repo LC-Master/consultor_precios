@@ -20,47 +20,60 @@ export const productSchema = z.object({
         .describe("Indicates if the product is blocked"),
     Descripcion: z
         .string({ error: "Invalid Descripcion" })
+        .min(1, { message: "Descripcion cannot be empty" })
         .describe("Description of the product"),
-    PrecioBase: z.
-        number({ error: "Invalid PrecioBase" })
+    PrecioBase: z
+        .number({ error: "Invalid PrecioBase" })
+        .nonnegative({ error: "PrecioBase must be non-negative" })
         .describe("Base price of the product"),
-    Iva: z.
-        number({ error: "Invalid Iva" })
+    Iva: z
+        .number({ error: "Invalid Iva" })
+        .nonnegative({ error: "Iva must be non-negative" })
+        .nonoptional()
         .describe("Tax applied to the product"),
-    PrecioIva: z.
-        number({ error: "Invalid PrecioIva" })
+    PrecioIva: z
+        .number({ error: "Invalid PrecioIva" })
+        .nonnegative({ error: "PrecioIva must be non-negative" })
+        .nonoptional()
         .describe("Price including tax"),
-    PrecioRef: z.
-        number({ error: "Invalid PrecioRef" })
+    PrecioRef: z
+        .number({ error: "Invalid PrecioRef" })
+        .nonnegative({ error: "PrecioRef must be non-negative" })
         .describe("Reference price"),
-    Tasa: z.
-        number({ error: "Invalid Tasa" })
+    Tasa: z
+        .number({ error: "Invalid Tasa" })
+        .nonnegative({ error: "Tasa must be non-negative" })
         .describe("Dollar exchange rate"),
-    TasaEuro: z.
-        number({ error: "Invalid TasaEuro" })
+    TasaEuro: z
+        .number({ error: "Invalid TasaEuro" })
+        .nonnegative({ error: "TasaEuro must be non-negative" })
         .describe("Euro exchange rate"),
     NomProm: z
         .string({ error: "Invalid NomProm" })
         .nullable()
         .optional()
         .describe("Name of the promotion"),
-    PrecioBaseProm: z.
-        number({ error: "Invalid PrecioBaseProm" })
+    PrecioBaseProm: z
+        .number({ error: "Invalid PrecioBaseProm" })
+        .nonnegative({ error: "PrecioBaseProm must be non-negative" })
         .nullable()
         .optional()
         .describe("Base price of the promotion"),
-    PrecioIVAProm: z.
-        number({ error: "Invalid PrecioIVAProm" })
+    PrecioIVAProm: z
+        .number({ error: "Invalid PrecioIVAProm" })
+        .nonnegative({ error: "PrecioIVAProm must be non-negative" })
         .nullable()
         .optional()
         .describe("Base price of the promotion"),
-    PrecioRefProm: z.
-        number({ error: "Invalid PrecioRefProm" })
+    PrecioRefProm: z
+        .number({ error: "Invalid PrecioRefProm" })
+        .nonnegative({ error: "PrecioRefProm must be non-negative" })
         .nullable()
         .optional()
         .describe("Base price of the promotion"),
-    PorcDesc: z.
-        number({ error: "Invalid PorcDesc" })
+    PorcDesc: z
+        .number({ error: "Invalid PorcDesc" })
+        .nonnegative({ error: "PorcDesc must be non-negative" })
         .nullable()
         .optional()
         .describe("Base price of the promotion")
