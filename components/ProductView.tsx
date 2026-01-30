@@ -152,7 +152,7 @@ export default function ProductView({ product, inputRef }: { product: IProduct, 
 
                 <div className="shrink-0 border-t border-slate-100 px-5 sm:px-8 py-3 text-xs sm:text-sm text-slate-500 flex flex-wrap gap-x-6 gap-y-2">
                     <span>CÓD BARRA: {product.barCode}</span>
-                    <span>TASA: {formatMoney(product.rate.dollar, "$") ?? "-"}</span>
+                    <span> TASA BCV: {formatMoney(product.rate.dollar, "$") ?? "-"}</span>
                     <span>TASA EUR: {formatMoney(product.rate.euro, "€") ?? "-"}</span>
                 </div>
             </div>

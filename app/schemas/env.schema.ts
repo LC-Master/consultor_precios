@@ -2,6 +2,20 @@ import z from "zod";
 
 export const envSchema = z.object(
   {
+    AUTHORIZED_IPS: z
+      .string()
+      .min(1, "AUTHORIZED_IPS no puede estar vacío")
+      .nonempty("AUTHORIZED_IPS no puede estar vacío")
+      .nonoptional({ error: "AUTHORIZED_IPS es obligatorio" })
+      .transform((val) => val.split(",").map(ip => ip.trim()))
+      .refine((arr) => arr.length > 0, { error: "AUTHORIZED_IPS debe contener al menos una IP válida" })
+      .describe("Lista de IPs autorizadas separadas por comas"),
+    NEXT_PUBLIC_API_KEY: z
+      .uuidv7({ error: "NEXT_PUBLIC_API_KEY debe ser un UUIDv7 válido, ejecute refreshKey para obtener uno nuevo" })
+      .min(1, "NEXT_PUBLIC_API_KEY no puede estar vacío")
+      .nonempty("NEXT_PUBLIC_API_KEY no puede estar vacío")
+      .nonoptional({ error: "NEXT_PUBLIC_API_KEY es obligatorio" })
+      .describe("Clave API para autenticación con la API"),
     URL_CONSULTA_PRECIO: z
       .url({ error: "URL_CONSULTA_PRECIO debe ser una URL válida" })
       .min(1, "URL_CONSULTA_PRECIO no puede estar vacío")
@@ -42,10 +56,10 @@ export const envSchema = z.object(
       .min(1, "DB_PASSWORD no puede estar vacío")
       .nonempty("DB_PASSWORD no puede estar vacío")
       .describe("Database user password"),
-    // DB_NAME: z.string()
-    //   .min(1, "DB_NAME no puede estar vacío")
-    //   .nonempty("DB_NAME no puede estar vacío")
-    //   .describe("Database name"),
+    DB_NAME: z.string()
+      .min(1, "DB_NAME no puede estar vacío")
+      .nonempty("DB_NAME no puede estar vacío")
+      .describe("Database name"),
     DB_HOST: z.string()
       .min(1, "DB_HOST no puede estar vacío")
       .nonempty("DB_HOST no puede estar vacío")
