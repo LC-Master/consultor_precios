@@ -9,14 +9,14 @@ export type Product = null | {
     priceWithTax: number;
     referencePrice: number;
   };
-  promotion: null | {
-    name: string;
-    basePrice: number;
-    priceWithTax: number;
-    referencePrice: number;
-    discountPercentage: number;
-    savings: number;
-  };
+  promotion: {
+    name: string | null | undefined;
+    basePrice: number | null | undefined;
+    priceWithTax: number | null | undefined;
+    referencePrice: number | null | undefined;
+    discountPercentage: number | null | undefined;
+    savings: number | null | undefined;
+  } | null;
   rate: {
     dollar?: number;
     euro?: number;
