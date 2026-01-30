@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
         if (product.CodBarra) {
             product.CodBarra = product.CodBarra.trim();
         }
-
+        
         const hasPromotion = !!(product.NomProm && product.PorcDesc && product.PorcDesc > 0);
 
         const resultProcessed = {
