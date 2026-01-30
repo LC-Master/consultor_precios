@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import ms, { type StringValue } from "ms";
-import type { IProduct } from "@/types/product.type";
+import type { Product } from "@/types/product.type";
 import Loading from "@/components/ui/Loading";
 import ProductView from "@/components/ProductView";
 import getProduct from "@/lib/getProduct";
@@ -11,7 +11,7 @@ export default function ConsultorUI() {
   const TIMEOUT = `${process.env.NEXT_PUBLIC_TIMEOUT_SECONDS}s` || "25s";
   const TIMEOUT_MS = ms(TIMEOUT as StringValue);
   const [code, setCode] = useState("");
-  const [product, setProduct] = useState<IProduct | null>(null);
+  const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(false);
   const [, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -34,7 +34,7 @@ export default function ConsultorUI() {
     setError(null);
     setProduct(null);
     try {
-      const data = await getProduct<IProduct>(code);
+      const data = await getProduct<Product>(code);
       setProduct(data);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : String(err));

@@ -1,4 +1,4 @@
-export type IProduct = null | {
+export type Product = null | {
   isBlocked: boolean;
   barCode: number;
   articleCode: number;

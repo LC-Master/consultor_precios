@@ -2,10 +2,18 @@ import { z } from 'zod'
 
 export const productSchema = z.object({
     CodArticulo: z
-        .string({ error: "Invalid CodArticulo" })
+        .coerce
+        .number({ error: "Invalid CodArticulo" })
+        .int({ error: "CodArticulo must be an integer" })
+        .nonnegative({ error: "CodArticulo must be non-negative" })
+        .nonoptional()
         .describe("Article code of the product"),
     CodBarra: z
-        .string({ error: "Invalid CodBarra" })
+        .coerce
+        .number({ error: "Invalid CodBarra" })
+        .int({ error: "CodBarra must be an integer" })
+        .nonnegative({ error: "CodBarra must be non-negative" })
+        .nonoptional()
         .describe("Barcode of the product"),
     Bloqueado: z
         .boolean({ error: "Invalid Bloqueado" })
