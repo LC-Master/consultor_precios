@@ -29,6 +29,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} bg-slate-100 antialiased min-h-screen flex flex-col overflow-hidden`}
       >
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
         <Header />
         <div className="flex-1 min-h-0 overflow-hidden">
           {children}

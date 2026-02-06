@@ -1,161 +1,152 @@
-import { IProduct } from "@/types/product.type";
+import { Product } from "@/types/product.type";
 import Image from "next/image";
 
 function formatMoney(value: number | null | undefined, currency: "Bs" | "$" | "€" = "Bs") {
     if (typeof value !== "number" || Number.isNaN(value)) return null;
-    return `${new Intl.NumberFormat("es-VE", { maximumFractionDigits: 2 }).format(value)} ${currency}`;
+    return `${new Intl.NumberFormat("es-VE", { maximumFractionDigits: 2, minimumFractionDigits: 2 }).format(value)} ${currency}`;
 }
-export default function ProductView({ product, inputRef }: { product: IProduct, inputRef: React.RefObject<HTMLInputElement | null> }) {
-    if (!product) {
-        return (
-            <div>
-                <h2>No se encontró el producto.</h2>
-            </div>
-        );
-    }
+
+export default function ProductView({ product, inputRef }: { product: Product, inputRef: React.RefObject<HTMLInputElement | null> }) {
+    if (!product) return null;
+
+    const hasPromotion = !!product.promotion;
+    // According to types provided:
+    // Prices struct has: base, tax, priceWithTax, referencePrice
+    // Promotion struct has: name, basePrice, priceWithTax, referencePrice, discountPercentage, savings
+
+    const priceBs = hasPromotion ? product.promotion!.priceWithTax : product.prices.priceWithTax;
+    const oldPriceBs = product.prices.priceWithTax;
+    
+    const priceRef = hasPromotion ? product.promotion!.referencePrice : product.prices.referencePrice;
+    
+    // Ensure we handle oldPriceRef properly, falling back to base referencePrice if null
+    const oldPriceRef = product.prices.referencePrice;
+
     return (
-        <div
-            className="h-full w-full box-border min-h-0 flex items-center justify-center p-3 sm:p-4 lg:p-6"
-            onClick={() => inputRef?.current?.focus()}
+        <div 
+            className="w-full max-w-4xl bg-white rounded-2xl shadow-2xl shadow-slate-200 overflow-hidden flex flex-col md:flex-row max-h-[80vh] border border-slate-100"
+            onClick={(e) => {
+                e.stopPropagation();
+                inputRef?.current?.focus();
+            }}
         >
-            <div className="w-full max-w-7xl max-h-full h-full bg-white rounded-3xl shadow-2xl ring-1 ring-slate-200 overflow-hidden flex flex-col">
-                <div className="p-4 sm:p-6 lg:p-8 flex-1 min-h-0 overflow-hidden">
-                    <div className="min-h-0 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 items-start">
-                        <div className="relative bg-linear-to-br from-slate-50 via-white to-slate-50 rounded-2xl p-6 flex items-center justify-center  md:self-stretch">
-                            <Image
-                                src="/test.webp"
-                                alt="Imagen del producto"
-                                width={420}
-                                height={420}
-                                className="rounded-xl object-contain max-h-72 sm:max-h-80 w-auto"
-                                priority
-                            />
-                        </div>
+            <div className="w-full md:w-5/12 bg-slate-50 relative flex items-center justify-center min-h-[250px] md:min-h-0">
+                 <div className="absolute inset-0 bg-locatel-medio/5"></div>
+                 <div className="relative w-full h-full p-6 flex items-center justify-center">
+                    <Image
+                        src="/test.webp"
+                        alt={product.description || "Producto"}
+                        fill
+                        className="object-contain p-2 mix-blend-multiply transition-transform duration-500 hover:scale-105"
+                        priority
+                    />
+                </div>
+            </div>
 
-                        <div className={`min-w-0 min-h-0 space-y-4 flex flex-col ${product?.promotion ? "self-start items-start text-left" : "self-center items-center text-center justify-center"}`}>
-                            {product.promotion ? (
-                                <span className="inline-flex items-center gap-2 bg-slate-50 border border-slate-200 text-locatel-medio px-3 py-1 rounded-full text-xs sm:text-sm mb-3">
-                                    {product.promotion.name}
-                                </span>
-                            ) : null}
-
-                            <h1 className="text-slate-900 font-semibold tracking-tight text-2xl sm:text-3xl leading-tight">
-                                {product.description || "Artículo"}
-                            </h1>
-
-                            <div className={`mt-2 flex items-end gap-3 flex-wrap ${product?.promotion ? "" : "justify-center"}`}>
-                                {product.promotion ? (
-                                    <span className="text-slate-400 line-through text-sm sm:text-base">
-                                        {formatMoney(product.prices.priceWithTax, "Bs")} IVA INC.
-                                    </span>
-                                ) : null}
-
-                                <div className="flex items-end gap-3 flex-wrap">
-                                    <div className="flex items-end gap-2">
-                                        <span className="text-locatel-medio font-extrabold text-5xl sm:text-6xl leading-none">
-                                            {product.promotion ? formatMoney(product.promotion.priceWithTax, "Bs") : formatMoney(product.prices.priceWithTax, "Bs") ?? "Sin precio"}
-                                        </span>
-                                        {product.prices.priceWithTax ? (
-                                            <span className="text-slate-500 text-sm sm:text-base pb-1">IVA INC.</span>
-                                        ) : null}
-                                    </div>
-
-                                    {product.promotion ? (
-                                        <div className="shrink-0 rounded-full w-16 h-16 sm:w-20 sm:h-20 bg-linear-to-b from-locatel-medio to-locatel-oscuro text-white shadow-lg ring-4 ring-white/70 flex items-center justify-center">
-                                            <div className="text-center leading-none">
-                                                <div className="text-2xl sm:text-3xl font-extrabold tracking-tight">-{product.promotion?.discountPercentage || 0}%</div>
-                                                <div className="text-[10px] sm:text-[11px] uppercase tracking-widest opacity-90 mt-0.5">Ahorro</div>
-                                            </div>
-                                        </div>
-                                    ) : null}
-                                </div>
-                            </div>
-
-                            {product.promotion ? (
-                                <div className={`mt-2 text-sm text-locatel-naranja ${product?.promotion?.name ? "" : "text-center"}`}>
-                                    Ahorras {formatMoney(product.promotion.savings, "Bs")}
-                                </div>
-                            ) : null}
-
-                            <div className={`mt-3 grid grid-cols-2 lg:grid-cols-4 gap-3 ${product?.promotion ? "" : "justify-center"}`}>
-                                <div className="bg-slate-50 rounded-2xl p-4 ring-1 ring-slate-200">
-                                    <div className="grid grid-cols-1 gap-3">
-                                        <div>
-                                            <div className="text-[11px] uppercase tracking-wide text-slate-400">Precio base</div>
-                                            <div className="text-base font-semibold text-slate-800 truncate">
-                                                {formatMoney(product.prices.base, "Bs") ?? "-"}
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <div className="text-[11px] uppercase tracking-wide text-slate-400">Precio IVA</div>
-                                            <div className="text-base font-semibold text-slate-800 truncate">
-                                                {formatMoney(product.prices.priceWithTax, "Bs") ?? "-"}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="bg-slate-50 rounded-2xl p-4 ring-1 ring-slate-200">
-                                    <div className="grid grid-cols-1 gap-3">
-                                        <div>
-                                            <div className="text-[11px] uppercase tracking-wide text-slate-400">Precio ref</div>
-                                            <div className="text-base font-semibold text-slate-800 truncate">
-                                                {formatMoney(product.prices.referencePrice, "$") ?? "-"}
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <div className="text-[11px] uppercase tracking-wide text-slate-400">IVA</div>
-                                            <div className="text-base font-semibold text-slate-800 truncate">
-                                                {`${product.prices.tax ?? "-"}%`}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="bg-slate-50 rounded-2xl p-4 ring-1 ring-slate-200">
-                                    <div className="grid grid-cols-1 gap-3">
-                                        <div>
-                                            <div className="text-[11px] uppercase tracking-wide text-slate-400">Base prom</div>
-                                            <div className="text-base font-semibold text-slate-800 truncate">
-                                                {formatMoney(product.promotion?.basePrice, "Bs") ?? "-"}
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <div className="text-[11px] uppercase tracking-wide text-slate-400">IVA prom</div>
-                                            <div className="text-base font-semibold text-slate-800 truncate">
-                                                {formatMoney(product.promotion?.priceWithTax, "Bs") ?? "-"}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="bg-slate-50 rounded-2xl p-4 ring-1 ring-slate-200">
-                                    <div className="grid grid-cols-1 gap-3">
-                                        <div>
-                                            <div className="text-[11px] uppercase tracking-wide text-slate-400">Ref prom</div>
-                                            <div className="text-base font-semibold text-slate-800 truncate">
-                                                {formatMoney(product.promotion?.referencePrice, "$") ?? "-"}
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <div className="text-[11px] uppercase tracking-wide text-slate-400">Código art</div>
-                                            <div className="text-base font-semibold text-slate-800 truncate">
-                                                {(product.articleCode ?? "-")}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+            <div className="w-full md:w-7/12 p-5 flex flex-col overflow-y-auto">
+                <div className="mb-4 relative">
+                    <span className="inline-block px-2 py-0.5 bg-locatel-medio/10 text-locatel-medio text-[9px] font-bold uppercase tracking-widest rounded-full mb-2">
+                       {product.isBlocked ? "Bloqueado" : (product.promotion?.name || "Regular")}
+                    </span>
+                    <h2 className="text-xl md:text-2xl font-extrabold text-slate-800 leading-tight">
+                        {product.description || "Artículo"}
+                    </h2>
+                    <div className="text-slate-400 font-medium mt-0.5 text-xs">
+                        Código: {product.articleCode}
                     </div>
                 </div>
 
-                <div className="shrink-0 border-t border-slate-100 px-5 sm:px-8 py-3 text-xs sm:text-sm text-slate-500 flex flex-wrap gap-x-6 gap-y-2">
-                    <span>CÓD BARRA: {product.barCode}</span>
-                    <span> TASA BCV: {formatMoney(product.rate.dollar, "$") ?? "-"}</span>
-                    <span>TASA EUR: {formatMoney(product.rate.euro, "€") ?? "-"}</span>
+                <div className="flex gap-3 mb-4 relative">
+                    {hasPromotion && (
+                        <div className="absolute -top-2 -right-1 z-20 bg-emerald-500 text-white w-12 h-12 rounded-full flex flex-col items-center justify-center shadow-lg transform rotate-12 border-2 border-white">
+                             <span className="text-[10px] font-bold leading-none">-{product.promotion?.discountPercentage}%</span>
+                        </div>
+                    )}
+                    
+                    <div className={`flex-1 bg-slate-50 p-3 rounded-xl border flex flex-col items-center text-center ${hasPromotion ? "border-locatel-medio/10" : "border-slate-200"}`}>
+                        <span className="text-[8px] font-black uppercase tracking-widest text-slate-400 mb-0.5">Bolívares</span>
+                        <div className="flex flex-col">
+                            {hasPromotion && (
+                                <span className="text-[9px] line-through text-slate-400 decoration-red-400/50">
+                                    {formatMoney(oldPriceBs, "Bs")}
+                                </span>
+                            )}
+                            <div className="text-locatel-medio font-extrabold text-xl md:text-2xl">
+                                {formatMoney(priceBs, "")} <span className="text-xs ml-0.5">Bs</span>
+                            </div>
+                        </div>
+                        <span className="text-[8px] font-bold text-slate-400 mt-0.5">IVA INC.</span>
+                    </div>
+
+                    <div className="flex-1 bg-locatel-medio text-white p-3 rounded-xl shadow-lg shadow-locatel-medio/20 flex flex-col items-center text-center">
+                        <span className="text-[8px] font-black uppercase tracking-widest text-white/70 mb-0.5">Dólares</span>
+                        <div className="flex flex-col">
+                             {hasPromotion && (
+                                <span className="text-[9px] line-through text-white/50 decoration-white/30">
+                                    {formatMoney(oldPriceRef, "$")}
+                                </span>
+                            )}
+                            <div className="font-extrabold text-xl md:text-2xl">
+                                {formatMoney(priceRef, "")} <span className="text-xs ml-0.5">$</span>
+                            </div>
+                        </div>
+                         {hasPromotion && (
+                            <span className="text-[8px] font-bold text-white/70 mt-0.5">REF PROM</span>
+                        )}
+                    </div>
+                </div>
+
+                {hasPromotion && (
+                    <div className="mb-4 flex items-center gap-1.5 text-emerald-600 font-bold bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100 w-fit text-xs">
+                        <span className="material-icons text-sm">trending_down</span>
+                        Ahorra: {formatMoney(product.promotion?.savings, "Bs")}
+                    </div>
+                )}
+
+                <div className="grid grid-cols-4 gap-2">
+                    <div className="p-2 bg-slate-50 rounded-lg border border-slate-100">
+                        <span className="block text-[7px] font-black text-slate-400 uppercase tracking-tighter mb-0.5">Base</span>
+                        <span className="text-[10px] font-bold text-slate-700 leading-none truncate block">
+                            {formatMoney(product.prices.base, "Bs")}
+                        </span>
+                    </div>
+
+                    <div className="p-2 bg-slate-50 rounded-lg border border-slate-100">
+                        <span className="block text-[7px] font-black text-slate-400 uppercase tracking-tighter mb-0.5">Base Prom</span>
+                            <span className="text-[10px] font-bold text-slate-700 leading-none truncate block">
+                            {hasPromotion ? formatMoney(product.promotion?.basePrice, "Bs") : "-"}
+                        </span>
+                    </div>
+
+                    <div className="p-2 bg-slate-50 rounded-lg border border-slate-100">
+                        <span className="block text-[7px] font-black text-slate-400 uppercase tracking-tighter mb-0.5">Ref</span>
+                        <span className="text-[10px] font-bold text-slate-700 leading-none truncate block">
+                                {formatMoney(priceRef, "$")}
+                        </span>
+                    </div>
+                
+                    <div className="p-2 bg-slate-50 rounded-lg border border-slate-100">
+                        <span className="block text-[7px] font-black text-slate-400 uppercase tracking-tighter mb-0.5">IVA (%)</span>
+                        <span className="text-[10px] font-bold text-slate-700 leading-none truncate block">{product.prices.tax}%</span>
+                    </div>
+                </div>
+
+                <div className="mt-auto pt-3 border-t border-slate-100 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div>
+                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mr-1">BCV:</span>
+                            <span className="text-[10px] font-bold text-slate-700">{formatMoney(product.rate?.dollar, "Bs")}</span>
+                        </div>
+                        <div>
+                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mr-1">EUR:</span>
+                            <span className="text-[10px] font-bold text-slate-700">{formatMoney(product.rate?.euro, "Bs")}</span>
+                        </div>
+                    </div>
+                    <div className="text-[9px] text-slate-400 font-medium">
+                        {product.barCode}
+                    </div>
                 </div>
             </div>
         </div>
     )
-};
+}
