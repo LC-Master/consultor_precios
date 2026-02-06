@@ -248,23 +248,29 @@ export default function ConsultorUI() {
       </div>
 
       {/* Scanner Input - Active UI & Default Placeholder UI */}
-      {/* Shown when NOT in standby (user scanning) OR when standby has NO content (offline/device default) */}
-      <div className={`relative z-10 w-full flex-1 flex flex-col items-center justify-center transition-all duration-300 ${isStandby && hasContent ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}>
-        
-        {/* Persistent Background Placeholder if available (Optional, if user wants it behind the input but not the grid) */}
-        {playlist?.place_holder?.url && (
-             // eslint-disable-next-line @next/next/no-img-element
-             <img 
-                 src={playlist.place_holder.url} 
-                 className="absolute inset-0 w-full h-full object-cover opacity-10 pointer-events-none grayscale" 
-                 alt=""
-             />
-        )}
+      {/* Input Logic: Always in DOM to capture scans, but visually hidden */}
+      <div className="fixed inset-0 z-40 opacity-0 w-0 h-0 overflow-hidden pointer-events-none">
+          <Input
+            ref={inputRef}
+            type="text"
+            inputMode="numeric"
+            autoComplete="off"
+            value={code}
+            onChange={handlerCode}
+            onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                if (e.key === "Enter") void handleSearch();
+            }}
+            onBlur={() => {
+                 setTimeout(() => inputRef.current?.focus(), 10);
+            }}
+            className="w-full h-full"
+          />
+      </div>
 
-        {/* Modal-style Overlay - Centered - Input Hidden but Focused */}
-        <div className="relative z-10 flex flex-col items-center justify-center">
-            
-            {/* The Visual Card "Modal" */}
+      {/* Offline/Empty State Visuals - "Consulta Aquí" Modal */}
+      {/* Only rendered if there is NO content (Ads/Server Placeholder) in the playlist */}
+      {!hasContent && (
+        <div className={`relative z-10 w-full flex-1 flex flex-col items-center justify-center transition-all duration-300 ${product ? 'opacity-0' : 'opacity-100'}`}>
             <div className="bg-white p-12 rounded-[3rem] shadow-2xl border border-slate-100 flex flex-col items-center text-center max-w-xl animate-in fade-in zoom-in duration-500">
                 <div className="bg-locatel-medio/10 p-6 rounded-full mb-6 animate-pulse">
                      <span className="material-icons text-8xl text-locatel-medio">qr_code_scanner</span>
@@ -273,28 +279,8 @@ export default function ConsultorUI() {
                 <div className="h-1 w-24 bg-locatel-medio rounded-full mb-4"></div>
                 <p className="text-slate-400 text-xl font-medium">Escanea el código de barras de tu producto</p>
             </div>
-
-            {/* The Input - Visually Hidden but Functional for Scanner */}
-            <div className="absolute inset-0 opacity-0 pointer-events-none overflow-hidden h-0 w-0">
-                <Input
-                ref={inputRef}
-                type="text"
-                inputMode="numeric"
-                autoComplete="off"
-                value={code}
-                onChange={handlerCode}
-                onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                    if (e.key === "Enter") void handleSearch();
-                }}
-                onBlur={() => {
-                     // Force focus back for kiosk mode
-                     setTimeout(() => inputRef.current?.focus(), 10);
-                }}
-                className="w-full h-full"
-                />
-            </div>
         </div>
-      </div>
+      )}
 
       {product && (
         <div className="absolute inset-0 z-10 flex items-center justify-center p-4 h-full animate-in fade-in zoom-in duration-300">
