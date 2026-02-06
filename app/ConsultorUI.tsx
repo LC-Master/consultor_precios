@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, type ChangeEvent, useMemo } from "react";
+import { useEffect, useRef, useState, type ChangeEvent, useMemo, useCallback } from "react";
 import ms, { type StringValue } from "ms";
 import type { Product } from "@/types/product.type";
 import Loading from "@/components/ui/Loading";
@@ -8,37 +8,37 @@ import ProductView from "@/components/ProductView";
 import ErrorView from "@/components/ErrorView";
 import getProduct from "@/lib/getProduct";
 import { Input } from "@/components/ui/Input";
+import StandbyView, { type PlaylistData } from "@/components/StandbyView";
+
+// Utility for deep comparison
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function deepEqual(obj1: any, obj2: any): boolean {
+  if (obj1 === obj2) return true;
+  if (!obj1 || !obj2 || typeof obj1 !== 'object' || typeof obj2 !== 'object') return false;
+  if (Array.isArray(obj1) !== Array.isArray(obj2)) return false;
+
+  const keys1 = Object.keys(obj1);
+  const keys2 = Object.keys(obj2);
+
+  if (keys1.length !== keys2.length) return false;
+
+  for (const key of keys1) {
+    if (!keys2.includes(key)) return false;
+    if (!deepEqual(obj1[key], obj2[key])) return false;
+  }
+  return true;
+}
 
 export default function ConsultorUI() {
   const TIMEOUT = `${process.env.NEXT_PUBLIC_TIMEOUT_SECONDS}s` || "25s";
-  const [playlist, setPlaylist] = useState<Root | null>(null);
+  // Initialize with empty playlist so StandbyView can render its default state even if API fails
+  const [playlist, setPlaylist] = useState<PlaylistData>({ am: [], pm: [] });
   const TIMEOUT_MS = ms(TIMEOUT as StringValue);
   const [code, setCode] = useState("");
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  interface Root {
-    am: Am[]
-    pm: Pm[]
-    place_holder: string
-  }
-
-  interface Am {
-    id: string
-    fileType: string
-    start_at: string
-    end_at: string
-  }
-
-  interface Pm {
-    id: string
-    fileType: string
-    start_at: string
-    end_at: string
-  }
-
 
   const handlerCode = (e: ChangeEvent<HTMLInputElement>) => {
     setCode(e.target.value);
@@ -48,7 +48,7 @@ export default function ConsultorUI() {
   const eventUrl = useMemo(() => new URL(process.env.NEXT_PUBLIC_API_URL_CDS + "events"), []);
   const authUrl = useMemo(() => new URL(process.env.NEXT_PUBLIC_API_URL_CDS + "auth/login/device"), []);
 
-  async function fetchWithAuth<T>(url: URL) {
+  const fetchWithAuth = useCallback(async function <T>(url: URL) {
     try {
       const resp = await fetch(url.toString(), {
         method: "GET",
@@ -58,17 +58,17 @@ export default function ConsultorUI() {
       });
 
       if (!resp.ok) {
-        throw new Error(`Error en la autenticación: ${resp.statusText}`);
+        console.error(`Fetch Error: ${resp.status} ${resp.statusText}`);
+        throw new Error(`Error en la petición: ${resp.status} ${resp.statusText}`);
       }
 
       const data = await resp.json() as T;
-      console.log(data)
       return data;
     } catch (error) {
-      console.error("Error al obtener el token de autenticación:", error);
-      throw new Error("Error al autenticar. Por favor, intente nuevamente.");
+      console.error("Error fetching data:", error);
+      throw error; 
     }
-  };
+  }, []);
 
   useEffect(() => {
     const fetchAuth = async () => {
@@ -104,47 +104,87 @@ export default function ConsultorUI() {
 
       const event = new EventSource(urlConToken.toString());
 
+      const fetchPlaylist = async () => {
+         try {
+             // Inferred type from API based on usage
+             interface ApiPlaylistRoot {
+                am: { id: string; fileType: string; start_at: string; end_at: string; duration?: number }[];
+                pm: { id: string; fileType: string; start_at: string; end_at: string; duration?: number }[];
+                place_holder: { id: string; fileType: string } | null;
+             }
+
+             const resp = await fetchWithAuth<ApiPlaylistRoot>(new URL(process.env.NEXT_PUBLIC_API_URL_CDS + "playlist"));
+             
+             if (resp) {
+                 // DATA TRANSFORMATION: Map ID to full URL
+                 const baseUrl = process.env.NEXT_PUBLIC_API_URL_CDS + "media/";
+
+                 const transformItem = (item: { id: string, fileType: string, start_at: string, end_at: string, duration?: number }) => ({
+                    ...item,
+                    url: `${baseUrl}${item.id}.${item.fileType}`
+                 });
+                 
+                 const transformedPlaylist: PlaylistData = {
+                     am: resp.am?.map(item => transformItem(item)) || [],
+                     pm: resp.pm?.map(item => transformItem(item)) || [],
+                     place_holder: resp.place_holder 
+                        ? {
+                            id: resp.place_holder.id,
+                            fileType: resp.place_holder.fileType,
+                            url: `${baseUrl}${resp.place_holder.id}.${resp.place_holder.fileType}`
+                          }
+                        : undefined
+                 };
+
+                 setPlaylist(prev => {
+                     if (deepEqual(prev, transformedPlaylist)) {
+                         console.log("Playlist unchanged, skipping update.");
+                         return prev;
+                     }
+                     console.log("Updating playlist...", transformedPlaylist);
+                     return transformedPlaylist;
+                 });
+             }
+         } catch (err) {
+             console.error("Error updating playlist:", err);
+         }
+      };
+
+      const handlePlaylistUpdate = async (e: MessageEvent) => {
+         const data = JSON.parse(e.data);
+         console.log("Event Received:", data);
+         await fetchPlaylist();
+      };
+
       event.addEventListener("ping", (e) => {
         console.log("Ping recibido:", JSON.parse(e.data));
       });
-      event.addEventListener("dto:updated", async (e) => {
-        const data = JSON.parse(e.data);
-        console.log("¡Actualización de DTO recibida!", data);
-        const resp = await fetchWithAuth<Root>(new URL(process.env.NEXT_PUBLIC_API_URL_CDS + "playlist"))
-          .catch(err => {
-            console.error("Error al obtener la playlist actualizada:", err);
-            setError("Error al obtener la playlist actualizada. Por favor, intente nuevamente.");
-          });
-        if (resp) {
-          setPlaylist(resp);
-        }
-      });
-      event.addEventListener("playlist:generated", async (e) => {
-        const data = JSON.parse(e.data);
-        console.log("¡Actualización de DTO recibida!", data);
-        const resp = await fetchWithAuth<Root>(new URL(process.env.NEXT_PUBLIC_API_URL_CDS + "playlist"))
-          .catch(err => {
-            console.error("Error al obtener la playlist actualizada:", err);
-            setError("Error al obtener la playlist actualizada. Por favor, intente nuevamente.");
-          });
-        if (resp) {
-          setPlaylist(resp);
-        }
-      });
+      
+      event.addEventListener("dto:updated", handlePlaylistUpdate);
+      event.addEventListener("playlist:generated", handlePlaylistUpdate);
+
+      // Initial fetch to ensure we have data immediately
+      void fetchPlaylist();
 
       event.onerror = async () => {
         event.close();
-
-        const check = await fetch(urlConToken.toString());
-        if (check.status === 401) {
-          console.log("Token inválido, re-autenticando...");
-          localStorage.removeItem("token");
-          await fetchAuth();
-          initializeEventSource();
+        
+        try {
+            const check = await fetch(urlConToken.toString());
+            if (check.status === 401) {
+              console.log("Token inválido, re-autenticando...");
+              localStorage.removeItem("token");
+              await fetchAuth();
+              initializeEventSource();
+            }
+        } catch (error) {
+            console.error("Error verifying token on SSE disconnect:", error);
+            // Optionally retry connection after delay
         }
       };
       return () => event.close();
     }
+    
     if (!localStorage.getItem("token")) {
       void fetchAuth().then(() => {
         if (localStorage.getItem("token")) {
@@ -157,7 +197,8 @@ export default function ConsultorUI() {
     } else {
       initializeEventSource();
     }
-  }, [authUrl, eventUrl]);
+  }, [authUrl, eventUrl, fetchWithAuth]);
+
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -179,7 +220,7 @@ export default function ConsultorUI() {
       setProduct(data);
     } catch (err: unknown) {
       console.error(err);
-      setError("Producto no encontrado");
+      setError("No pudimos encontrar información para este código. Por favor verifique e intente nuevamente.");
     } finally {
       setLoading(false);
       setTimeout(() => inputRef.current?.focus(), 100);
@@ -192,42 +233,81 @@ export default function ConsultorUI() {
 
   if (loading) return <Loading />;
 
+  // Determine if we are in "Standby" (Idle) mode:
+  // No active product result, no error message, no user typing (code is empty).
+  const isStandby = !product && !error && !code;
+  const hasContent = playlist && (playlist.am.length > 0 || playlist.pm.length > 0 || !!playlist.place_holder);
+
   return (
     <main className="relative h-full w-full bg-slate-50 overflow-hidden flex flex-col items-center justify-center p-4">
-      <div className={`w-full max-w-2xl px-4 transition-all duration-300 ${product || error ? 'opacity-0 pointer-events-none absolute scale-95' : 'opacity-100 scale-100'}`}>
-        <div className="relative w-full group">
-          <div className="absolute -inset-1 bg-linear-to-r from-locatel-medio/20 to-blue-500/20 rounded-2xl blur opacity-25 group-focus-within:opacity-50 transition duration-1000"></div>
-          <div className="relative">
-            <span className="material-icons absolute left-5 top-1/2 -translate-y-1/2 text-locatel-medio text-2xl pointer-events-none select-none animate-pulse">qr_code_scanner</span>
-            <Input
-              ref={inputRef}
-              type="text"
-              inputMode="numeric"
-              autoComplete="off"
-              value={code}
-              onChange={handlerCode}
-              onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                if (e.key === "Enter") void handleSearch();
-              }}
-              aria-label="Escáner de código de barras"
-              className="w-full bg-white border border-slate-200 rounded-xl py-4 pl-14 pr-4 font-mono text-xl text-slate-700 placeholder:text-slate-400 outline-none focus:ring-4 focus:ring-locatel-medio/10 focus:border-locatel-medio/50 h-auto transition-all shadow-xl shadow-slate-200/50"
-              placeholder="Escanea el código aquí..."
-            />
-          </div>
+      {/* Standby View (Ads) - Always mounted to preserve state, toggled via CSS/prop */}
+      {/* Only visible if there is actual content to show. Otherwise, it hides to let Scanner Input show. */}
+      {/* Removed bg-white from wrapper so it doesn't block the view when empty/transitioning */}
+      <div className={`fixed inset-0 z-50 transition-opacity duration-500 ${isStandby && hasContent ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+        <StandbyView playlist={playlist} isActive={isStandby && !!hasContent} />
+      </div>
+
+      {/* Scanner Input - Active UI & Default Placeholder UI */}
+      {/* Shown when NOT in standby (user scanning) OR when standby has NO content (offline/device default) */}
+      <div className={`relative z-10 w-full flex-1 flex flex-col items-center justify-center transition-all duration-300 ${isStandby && hasContent ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}>
+        
+        {/* Persistent Background Placeholder if available (Optional, if user wants it behind the input but not the grid) */}
+        {playlist?.place_holder?.url && (
+             // eslint-disable-next-line @next/next/no-img-element
+             <img 
+                 src={playlist.place_holder.url} 
+                 className="absolute inset-0 w-full h-full object-cover opacity-10 pointer-events-none grayscale" 
+                 alt=""
+             />
+        )}
+
+        {/* Modal-style Overlay - Centered - Input Hidden but Focused */}
+        <div className="relative z-10 flex flex-col items-center justify-center">
+            
+            {/* The Visual Card "Modal" */}
+            <div className="bg-white p-12 rounded-[3rem] shadow-2xl border border-slate-100 flex flex-col items-center text-center max-w-xl animate-in fade-in zoom-in duration-500">
+                <div className="bg-locatel-medio/10 p-6 rounded-full mb-6 animate-pulse">
+                     <span className="material-icons text-8xl text-locatel-medio">qr_code_scanner</span>
+                </div>
+                <h1 className="text-5xl font-black text-slate-800 tracking-widest uppercase mb-4">Consulta Aquí</h1>
+                <div className="h-1 w-24 bg-locatel-medio rounded-full mb-4"></div>
+                <p className="text-slate-400 text-xl font-medium">Escanea el código de barras de tu producto</p>
+            </div>
+
+            {/* The Input - Visually Hidden but Functional for Scanner */}
+            <div className="absolute inset-0 opacity-0 pointer-events-none overflow-hidden h-0 w-0">
+                <Input
+                ref={inputRef}
+                type="text"
+                inputMode="numeric"
+                autoComplete="off"
+                value={code}
+                onChange={handlerCode}
+                onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                    if (e.key === "Enter") void handleSearch();
+                }}
+                onBlur={() => {
+                     // Force focus back for kiosk mode
+                     setTimeout(() => inputRef.current?.focus(), 10);
+                }}
+                className="w-full h-full"
+                />
+            </div>
         </div>
-        <p className="mt-8 text-center text-slate-400 text-xs font-bold tracking-widest uppercase opacity-50">Sistema de consulta de precios</p>
       </div>
 
       {product && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center p-4 h-full animate-in fade-in zoom-in duration-300">
-          <div className="max-h-full w-full flex items-center justify-center p-4">
+        <div className="absolute inset-0 z-10 flex items-center justify-center p-4 h-full animate-in fade-in zoom-in duration-300">
+          <div className="max-h-full w-full flex items-center justify-center">
             <ProductView product={product} inputRef={inputRef} />
           </div>
         </div>
       )}
 
       {error && (
-        <ErrorView message={error} onClose={() => setError(null)} inputRef={inputRef} />
+         <div className="absolute inset-0 z-50 flex items-center justify-center">
+            <ErrorView message={error} onClose={() => setError(null)} inputRef={inputRef} />
+         </div>
       )}
     </main>
   );
