@@ -164,15 +164,28 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
 
     if (isEmpty) {
         if (playlist.place_holder?.url) {
+            const isPlaceholderVideo = isVideo(playlist.place_holder.fileType);
+
             return (
                 <div className="absolute inset-0 bg-slate-100 h-full animate-in fade-in duration-1000">
-                    {/* Fullscreen Server Placeholder */}
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img 
-                        src={playlist.place_holder.url} 
-                        alt="Placeholder" 
-                        className="object-cover w-full h-full" 
-                    />
+                    {/* Fullscreen Server Placeholder (Video or Image) */}
+                    {isPlaceholderVideo ? (
+                         <video 
+                            src={playlist.place_holder.url} 
+                            className="w-full h-full object-cover" 
+                            autoPlay 
+                            muted 
+                            loop 
+                            playsInline
+                        />
+                    ) : (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img 
+                            src={playlist.place_holder.url} 
+                            alt="Placeholder" 
+                            className="object-cover w-full h-full" 
+                        />
+                    )}
                     
                     {/* Standard Info Overlay */}
                     <InfoOverlay />
