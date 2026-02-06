@@ -165,29 +165,17 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
     if (isEmpty) {
         if (playlist.place_holder?.url) {
             return (
-                <div className="absolute inset-0 bg-white grid grid-cols-12 h-full animate-in fade-in duration-1000">
-                    {/* Left Main Pane with Server Placeholder */}
-                    <div className="col-span-8 relative h-full bg-slate-50 flex items-center justify-center p-0 overflow-hidden">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={playlist.place_holder.url} alt="Placeholder" className="object-cover w-full h-full opacity-50" />
-                        
-                        {/* Overlay Text forced by user requirement */}
-                        <div className="absolute inset-0 flex flex-col items-center justify-center text-locatel-medio animate-pulse">
-                            <span className="material-icons text-9xl">shopping_cart</span>
-                            <h1 className="text-4xl font-bold mt-4 uppercase tracking-widest text-slate-400">Consulta Aquí</h1>
-                            <p className="mt-2 text-xl font-light text-slate-400">Escanea tu producto</p>
-                        </div>
-                    </div>
-
-                    {/* Right Side Pane */}
-                    <div className="col-span-4 grid grid-rows-2 h-full">
-                        <div className="relative border-b border-white p-0 overflow-hidden bg-slate-50 flex items-center justify-center">
-                            <span className="material-icons text-8xl text-slate-200 animate-pulse">touch_app</span>
-                        </div>
-                        <div className="relative p-0 overflow-hidden bg-slate-50 flex items-center justify-center">
-                            <span className="material-icons text-8xl text-slate-200 animate-pulse">shopping_bag</span>
-                        </div>
-                    </div>
+                <div className="absolute inset-0 bg-slate-100 h-full animate-in fade-in duration-1000">
+                    {/* Fullscreen Server Placeholder */}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img 
+                        src={playlist.place_holder.url} 
+                        alt="Placeholder" 
+                        className="object-cover w-full h-full" 
+                    />
+                    
+                    {/* Standard Info Overlay */}
+                    <InfoOverlay />
                 </div>
             )
         }

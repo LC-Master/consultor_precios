@@ -66,9 +66,12 @@ export default function ConsultorUI() {
       return data;
     } catch (error) {
       console.error("Error fetching data:", error);
-      throw error; 
+      throw error;
     }
   }, []);
+
+  const eventSourceRef = useRef<EventSource | null>(null);
+  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const fetchAuth = async () => {
@@ -96,107 +99,132 @@ export default function ConsultorUI() {
     };
 
     const initializeEventSource = () => {
+      // Clear any pending retry
+      if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
+      // Close any existing connection
+      if (eventSourceRef.current) eventSourceRef.current.close();
+
       const token = localStorage.getItem("token");
-      if (!token) throw new Error("Token no disponible");
+      if (!token) return; // Should not happen if logic below is correct
 
       const urlConToken = new URL(eventUrl.toString());
       urlConToken.searchParams.set("token", token);
 
+      console.log("Conectando al SSE...");
       const event = new EventSource(urlConToken.toString());
+      eventSourceRef.current = event;
 
       const fetchPlaylist = async () => {
-         try {
-             // Inferred type from API based on usage
-             interface ApiPlaylistRoot {
-                am: { id: string; fileType: string; start_at: string; end_at: string; duration?: number }[];
-                pm: { id: string; fileType: string; start_at: string; end_at: string; duration?: number }[];
-                place_holder: { id: string; fileType: string } | null;
-             }
+        try {
+          // Inferred type from API based on usage
+          interface ApiPlaylistRoot {
+            am: { id: string; fileType: string; start_at: string; end_at: string; duration?: number }[];
+            pm: { id: string; fileType: string; start_at: string; end_at: string; duration?: number }[];
+            place_holder: { id: string; fileType: string } | null;
+          }
 
-             const resp = await fetchWithAuth<ApiPlaylistRoot>(new URL(process.env.NEXT_PUBLIC_API_URL_CDS + "playlist"));
-             
-             if (resp) {
-                 // DATA TRANSFORMATION: Map ID to full URL
-                 const baseUrl = process.env.NEXT_PUBLIC_API_URL_CDS + "media/";
+          const resp = await fetchWithAuth<ApiPlaylistRoot>(new URL(process.env.NEXT_PUBLIC_API_URL_CDS + "playlist"));
 
-                 const transformItem = (item: { id: string, fileType: string, start_at: string, end_at: string, duration?: number }) => ({
-                    ...item,
-                    url: `${baseUrl}${item.id}.${item.fileType}`
-                 });
-                 
-                 const transformedPlaylist: PlaylistData = {
-                     am: resp.am?.map(item => transformItem(item)) || [],
-                     pm: resp.pm?.map(item => transformItem(item)) || [],
-                     place_holder: resp.place_holder 
-                        ? {
-                            id: resp.place_holder.id,
-                            fileType: resp.place_holder.fileType,
-                            url: `${baseUrl}${resp.place_holder.id}.${resp.place_holder.fileType}`
-                          }
-                        : undefined
-                 };
+          if (resp) {
+            // DATA TRANSFORMATION: Map ID to full URL
+            const baseUrl = process.env.NEXT_PUBLIC_API_URL_CDS + "media/";
 
-                 setPlaylist(prev => {
-                     if (deepEqual(prev, transformedPlaylist)) {
-                         console.log("Playlist unchanged, skipping update.");
-                         return prev;
-                     }
-                     console.log("Updating playlist...", transformedPlaylist);
-                     return transformedPlaylist;
-                 });
-             }
-         } catch (err) {
-             console.error("Error updating playlist:", err);
-         }
+            const transformItem = (item: { id: string, fileType: string, start_at: string, end_at: string, duration?: number }) => ({
+              ...item,
+              url: `${baseUrl}${item.id}.${item.fileType}`
+            });
+
+            const transformedPlaylist: PlaylistData = {
+              am: resp.am?.map(item => transformItem(item)) || [],
+              pm: resp.pm?.map(item => transformItem(item)) || [],
+              place_holder: resp.place_holder
+                ? {
+                  id: resp.place_holder.id,
+                  fileType: resp.place_holder.fileType,
+                  url: `${baseUrl}${resp.place_holder.id}.${resp.place_holder.fileType}`
+                }
+                : undefined
+            };
+
+            setPlaylist(prev => {
+              if (deepEqual(prev, transformedPlaylist)) {
+                return prev;
+              }
+              console.log("Playlist actualizada/recuperada:", transformedPlaylist);
+              return transformedPlaylist;
+            });
+          }
+        } catch (err) {
+          console.error("Error updating playlist:", err);
+        }
       };
 
       const handlePlaylistUpdate = async (e: MessageEvent) => {
-         const data = JSON.parse(e.data);
-         console.log("Event Received:", data);
-         await fetchPlaylist();
+        const data = JSON.parse(e.data);
+        console.log("Event Received:", data);
+        await fetchPlaylist();
       };
 
       event.addEventListener("ping", (e) => {
-        console.log("Ping recibido:", JSON.parse(e.data));
+        console.log(e)
       });
-      
+
       event.addEventListener("dto:updated", handlePlaylistUpdate);
       event.addEventListener("playlist:generated", handlePlaylistUpdate);
-
-      // Initial fetch to ensure we have data immediately
-      void fetchPlaylist();
+      event.addEventListener("open", () => {
+        console.log("Conexión SSE Establecida");
+        void fetchPlaylist();
+      });
 
       event.onerror = async () => {
+        console.error("Error en conexión SSE (Closed/Error).");
         event.close();
-        
+
+        // Immediate check: Is it just a token expiry?
         try {
-            const check = await fetch(urlConToken.toString());
-            if (check.status === 401) {
-              console.log("Token inválido, re-autenticando...");
-              localStorage.removeItem("token");
-              await fetchAuth();
-              initializeEventSource();
-            }
-        } catch (error) {
-            console.error("Error verifying token on SSE disconnect:", error);
-            // Optionally retry connection after delay
+          const check = await fetch(urlConToken.toString());
+          if (check.status === 401) {
+            console.log("Token inválido, re-autenticando inmediatamente...");
+            localStorage.removeItem("token");
+            await fetchAuth();
+            initializeEventSource(); // Retry immediately
+            return;
+          }
+        } catch (e) {
+          console.error("Fallo al verificar token (posible caída de red):", e);
         }
-      };
-      return () => event.close();
-    }
-    
-    if (!localStorage.getItem("token")) {
-      void fetchAuth().then(() => {
-        if (localStorage.getItem("token")) {
+
+        // If we represent a dropped connection or server down, wait 60s
+        console.log("Intentando reconectar en 1 minuto...");
+        retryTimeoutRef.current = setTimeout(() => {
+          console.log("Ejecutando reintento de conexión...");
           initializeEventSource();
-        } else {
-          console.error("Token no se guardó correctamente en el almacenamiento local.");
-          setError("Error al guardar el token de autenticación.");
-        }
-      });
-    } else {
-      initializeEventSource();
-    }
+        }, 60000);
+      };
+    };
+
+    // Bootstrapping
+    const bootstrap = async () => {
+      if (!localStorage.getItem("token")) {
+        await fetchAuth();
+      }
+      if (localStorage.getItem("token")) {
+        initializeEventSource();
+      } else {
+        console.error("No se pudo obtener token, reintentando bootstrap en 60s");
+        retryTimeoutRef.current = setTimeout(bootstrap, 60000);
+      }
+    };
+
+    bootstrap();
+
+    return () => {
+      if (eventSourceRef.current) {
+        console.log("Limpiando conexión SSE");
+        eventSourceRef.current.close();
+      }
+      if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
+    };
   }, [authUrl, eventUrl, fetchWithAuth]);
 
 
@@ -250,35 +278,35 @@ export default function ConsultorUI() {
       {/* Scanner Input - Active UI & Default Placeholder UI */}
       {/* Input Logic: Always in DOM to capture scans, but visually hidden */}
       <div className="fixed inset-0 z-40 opacity-0 w-0 h-0 overflow-hidden pointer-events-none">
-          <Input
-            ref={inputRef}
-            type="text"
-            inputMode="numeric"
-            autoComplete="off"
-            value={code}
-            onChange={handlerCode}
-            onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                if (e.key === "Enter") void handleSearch();
-            }}
-            onBlur={() => {
-                 setTimeout(() => inputRef.current?.focus(), 10);
-            }}
-            className="w-full h-full"
-          />
+        <Input
+          ref={inputRef}
+          type="text"
+          inputMode="numeric"
+          autoComplete="off"
+          value={code}
+          onChange={handlerCode}
+          onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+            if (e.key === "Enter") void handleSearch();
+          }}
+          onBlur={() => {
+            setTimeout(() => inputRef.current?.focus(), 10);
+          }}
+          className="w-full h-full"
+        />
       </div>
 
       {/* Offline/Empty State Visuals - "Consulta Aquí" Modal */}
       {/* Only rendered if there is NO content (Ads/Server Placeholder) in the playlist */}
       {!hasContent && (
         <div className={`relative z-10 w-full flex-1 flex flex-col items-center justify-center transition-all duration-300 ${product ? 'opacity-0' : 'opacity-100'}`}>
-            <div className="bg-white p-12 rounded-[3rem] shadow-2xl border border-slate-100 flex flex-col items-center text-center max-w-xl animate-in fade-in zoom-in duration-500">
-                <div className="bg-locatel-medio/10 p-6 rounded-full mb-6 animate-pulse">
-                     <span className="material-icons text-8xl text-locatel-medio">qr_code_scanner</span>
-                </div>
-                <h1 className="text-5xl font-black text-slate-800 tracking-widest uppercase mb-4">Consulta Aquí</h1>
-                <div className="h-1 w-24 bg-locatel-medio rounded-full mb-4"></div>
-                <p className="text-slate-400 text-xl font-medium">Escanea el código de barras de tu producto</p>
+          <div className="bg-white p-12 rounded-[3rem] shadow-2xl border border-slate-100 flex flex-col items-center text-center max-w-xl animate-in fade-in zoom-in duration-500">
+            <div className="bg-locatel-medio/10 p-6 rounded-full mb-6 animate-pulse">
+              <span className="material-icons text-8xl text-locatel-medio">qr_code_scanner</span>
             </div>
+            <h1 className="text-5xl font-black text-slate-800 tracking-widest uppercase mb-4">Consulta Aquí</h1>
+            <div className="h-1 w-24 bg-locatel-medio rounded-full mb-4"></div>
+            <p className="text-slate-400 text-xl font-medium">Escanea el código de barras de tu producto</p>
+          </div>
         </div>
       )}
 
@@ -291,9 +319,9 @@ export default function ConsultorUI() {
       )}
 
       {error && (
-         <div className="absolute inset-0 z-50 flex items-center justify-center">
-            <ErrorView message={error} onClose={() => setError(null)} inputRef={inputRef} />
-         </div>
+        <div className="absolute inset-0 z-50 flex items-center justify-center">
+          <ErrorView message={error} onClose={() => setError(null)} inputRef={inputRef} />
+        </div>
       )}
     </main>
   );
