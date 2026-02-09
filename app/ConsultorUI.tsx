@@ -87,12 +87,6 @@ export default function ConsultorUI() {
         if (!resp.ok) {
           throw new Error(`Error en la autenticación: ${resp.statusText}`);
         }
-
-        const data = await resp.json();
-        if (!data.token) {
-          throw new Error("Token no válido en la respuesta del servidor");
-        }
-        localStorage.setItem("token", data.token);
       } catch (error) {
         console.error("Error al obtener el token de autenticación:", error);
         setError("Error al autenticar. Por favor, intente nuevamente.");
@@ -105,14 +99,12 @@ export default function ConsultorUI() {
       // Close any existing connection
       if (eventSourceRef.current) eventSourceRef.current.close();
 
-      const token = localStorage.getItem("token");
-      if (!token) return; // Should not happen if logic below is correct
-
       const urlConToken = new URL(eventUrl.toString());
-      urlConToken.searchParams.set("token", token);
 
       console.log("Conectando al SSE...");
-      const event = new EventSource(urlConToken.toString());
+      const event = new EventSource(urlConToken.toString(), {
+        withCredentials: true,
+      });
       eventSourceRef.current = event;
 
       const fetchPlaylist = async () => {
@@ -221,21 +213,6 @@ export default function ConsultorUI() {
         console.error("Error en conexión SSE (Closed/Error).");
         event.close();
 
-        // Immediate check: Is it just a token expiry?
-        try {
-          const check = await fetch(urlConToken.toString());
-          if (check.status === 401) {
-            console.log("Token inválido, re-autenticando inmediatamente...");
-            localStorage.removeItem("token");
-            await fetchAuth();
-            initializeEventSource(); // Retry immediately
-            return;
-          }
-        } catch (e) {
-          console.error("Fallo al verificar token (posible caída de red):", e);
-        }
-
-        // If we represent a dropped connection or server down, wait 60s
         console.log("Intentando reconectar en 1 minuto...");
         retryTimeoutRef.current = setTimeout(() => {
           console.log("Ejecutando reintento de conexión...");
