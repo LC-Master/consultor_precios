@@ -32,7 +32,12 @@ const isVideo = (fileType: string) => {
 const InfoOverlay = () => (
     <div className="absolute bottom-10 left-0 right-0 z-20 flex justify-center pointer-events-none">
         <div className="bg-locatel-fuerte/90 backdrop-blur-md border-2 border-white/30 px-10 py-4 rounded-2xl shadow-2xl flex items-center gap-4 transform hover:scale-105 transition-transform duration-500">
-            <span className="w-3 h-3 rounded-full bg-green-400 animate-pulse shadow-[0_0_15px_rgba(74,222,128,0.8)]"></span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img 
+                src="/logo.webp" 
+                alt="Logo" 
+                className="w-10 h-10 object-contain drop-shadow-md"
+            />
             <div className="flex flex-col items-start justify-center -space-y-1">
                 <p className="text-white text-xs font-bold tracking-[0.2em] uppercase opacity-80">Sistema</p>
                 <p className="text-white text-xl font-black tracking-widest uppercase drop-shadow-lg">
@@ -162,15 +167,17 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
     
     // --- Render Logic ---
 
+    // 1. Placeholder / Empty
     if (isEmpty) {
         if (playlist.place_holder?.url) {
             const isPlaceholderVideo = isVideo(playlist.place_holder.fileType);
 
             return (
-                <div className="absolute inset-0 bg-slate-100 h-full animate-in fade-in duration-1000">
+                <div className="absolute inset-0 bg-black h-full">
                     {/* Fullscreen Server Placeholder (Video or Image) */}
                     {isPlaceholderVideo ? (
                          <video 
+                            id="placeholder-video"
                             src={playlist.place_holder.url} 
                             className="w-full h-full object-cover" 
                             autoPlay 
@@ -193,15 +200,13 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
             )
         }
         
-        // If honestly empty (no server placeholder, no content), render NOTHING here.
-        // The ConsultorUI input will take over the visibility.
         return null; 
     }
 
-    // CASE: Video Only (Strictly no images) -> Fullscreen Video
+    // 2. Video Only Mode
     if (hasVideos && !hasImages) {
          return (
-            <div key={activeVideo!.id} className="absolute inset-0 bg-black animate-in fade-in duration-1000">
+            <div className="absolute inset-0 bg-black">
                 <video 
                     ref={videoRef}
                     src={activeVideo!.url} 
@@ -218,18 +223,18 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
         );
     }
 
-    // CASE: Mixed Layout (Video/Main Left + Images Right)
-    // OR Image Only Layout (Image Left + Images Right)
+    // 3. Mixed / Image Mode
     const mainContentUrl = hasVideos ? activeVideo!.url : activeMainImage!.url;
     const isMainContentVideo = hasVideos;
     
-    // For the main key, use the ID of the playing item to force re-render/animate on change
-    const mainKey = hasVideos ? activeVideo!.id : activeMainImage!.id;
+    // CRITICAL FIX: Removed 'key' props from video/img elements to encourage reuse.
+    // This allows the browser to swap the 'src' attribute instantly without destroying the DOM component.
+    // This eliminates flickering (black screens) during transitions.
 
     return (
-        <div className="absolute inset-0 bg-white grid grid-cols-12 h-full animate-in fade-in duration-1000">
-            {/* Left Main Pane (8 cols) - No borders, full bleed */}
-            <div key={mainKey} className="col-span-8 relative h-full bg-slate-50 flex items-center justify-center p-0 overflow-hidden animate-in fade-in zoom-in-95 duration-700">
+        <div className="absolute inset-0 bg-black grid grid-cols-12 h-full">
+             {/* Left Main Pane (8 cols) - No borders, full bleed */}
+             <div className="col-span-8 relative h-full bg-black flex items-center justify-center p-0 overflow-hidden">
                 {isMainContentVideo ? (
                      <video 
                         ref={videoRef}
@@ -243,7 +248,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                         onError={handleNextMain}
                     />
                 ) : (
-                    <div className="relative w-full h-full">
+                    <div className="relative w-full h-full bg-black">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img 
                             src={mainContentUrl} 
@@ -255,29 +260,27 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
             </div>
 
             {/* Right Side Pane (4 cols) - Split Top/Bottom - IMAGES ONLY */}
-            <div className="col-span-4 grid grid-rows-2 h-full">
+            <div className="col-span-4 grid grid-rows-2 h-full bg-black">
                 {/* Top Right Block */}
-                <div className="relative border-b border-white p-0 overflow-hidden">
+                <div className="relative border-b border-white/10 p-0 overflow-hidden bg-black">
                      {rightTopImage && (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img 
-                            key={`top-${rightTopImage.id}`}
                             src={rightTopImage.url} 
                             alt="Next 1" 
-                            className="object-cover w-full h-full animate-in slide-in-from-right-8 duration-700"
+                            className="object-cover w-full h-full"
                         />
                      )}
                 </div>
                 
                 {/* Bottom Right Block */}
-                <div className="relative p-0 overflow-hidden">
+                <div className="relative p-0 overflow-hidden bg-black">
                      {rightBottomImage && (
                          // eslint-disable-next-line @next/next/no-img-element
                          <img 
-                             key={`bottom-${rightBottomImage.id}`}
                              src={rightBottomImage.url} 
                              alt="Next 2" 
-                             className="object-cover w-full h-full animate-in slide-in-from-right-8 duration-1000"
+                             className="object-cover w-full h-full"
                          />
                      )}
                 </div>

@@ -146,7 +146,7 @@ export default function ConsultorUI() {
                 : undefined
             };
 
-
+            // Preload Content Logic
             const preloadMedia = (url: string, fileType: string) => {
               return new Promise<void>((resolve) => {
                 const isVideo = ['mp4', 'webm', 'ogg', 'mov'].some(ext => fileType.toLowerCase().includes(ext));
