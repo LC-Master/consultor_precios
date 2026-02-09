@@ -146,6 +146,46 @@ export default function ConsultorUI() {
                 : undefined
             };
 
+
+            const preloadMedia = (url: string, fileType: string) => {
+              return new Promise<void>((resolve) => {
+                const isVideo = ['mp4', 'webm', 'ogg', 'mov'].some(ext => fileType.toLowerCase().includes(ext));
+                if (isVideo) {
+                  const video = document.createElement('video');
+                  video.preload = 'auto';
+                  video.onloadeddata = () => resolve();
+                  video.onerror = () => {
+                    console.warn(`Failed to preload video: ${url}`);
+                    resolve();
+                  };
+                  video.src = url;
+                  video.load();
+                } else {
+                  const img = new Image();
+                  img.onload = () => resolve();
+                  img.onerror = () => {
+                    console.warn(`Failed to preload image: ${url}`);
+                    resolve();
+                  };
+                  img.src = url;
+                }
+              });
+            };
+
+            // Gather all items to preload
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const items: any[] = [
+              ...transformedPlaylist.am,
+              ...transformedPlaylist.pm,
+              ...(transformedPlaylist.place_holder ? [transformedPlaylist.place_holder] : [])
+            ];
+
+            const promises = items.map(item => preloadMedia(item.url, item.fileType));
+
+            if (promises.length > 0) {
+              await Promise.all(promises);
+            }
+
             setPlaylist(prev => {
               if (deepEqual(prev, transformedPlaylist)) {
                 return prev;
