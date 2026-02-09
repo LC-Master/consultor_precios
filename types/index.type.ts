@@ -1,44 +1,21 @@
-export interface SnapshotDto {
-  meta: Meta
-  data: Data
+export interface MediaItem {
+  id: string;
+  fileType: string;
+  url: string;
+  start_at: string;
+  end_at: string;
+  duration?: number;
+  position?: number;
 }
 
-export interface Meta {
-  version: string
-  generated_at: string
+export interface PlaylistData {
+  am: MediaItem[];
+  pm: MediaItem[];
+  place_holder?: { id: string; fileType: string; url?: string };
 }
 
-export interface Data {
-  center_id: string
-  campaigns: Campaign[]
+export interface StandbyViewProps {
+  playlist: PlaylistData;
+  isActive?: boolean;
 }
 
-export interface Campaign {
-  id: string
-  title: string
-  status: string
-  department: string
-  agreement: string
-  start_at: string
-  end_at: string
-  slots: Slots
-}
-
-export interface Slots {
-  am: Am[]
-  pm: Pm[]
-}
-
-export interface Am {
-  id: string
-  name: string
-  duration_seconds: number
-  position: number
-}
-
-export interface Pm {
-  id: string
-  name: string
-  duration_seconds: number
-  position: number
-}

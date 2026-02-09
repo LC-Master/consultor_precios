@@ -8,7 +8,8 @@ import ProductView from "@/components/ProductView";
 import ErrorView from "@/components/ErrorView";
 import getProduct from "@/lib/getProduct";
 import { Input } from "@/components/ui/Input";
-import StandbyView, { type PlaylistData } from "@/components/StandbyView";
+import StandbyView from "@/components/StandbyView";
+import { PlaylistData } from "@/types/index.type";
 
 // Utility for deep comparison
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

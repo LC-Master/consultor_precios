@@ -1,6 +1,6 @@
 import { codeSchema } from "@/app/schemas/code.schema";
 import { IProduct, productSchema } from "@/app/schemas/product.schema";
-import { NextRequest,NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import sql from 'mssql';
 import { pool } from "@/src/provider/pool.provider";
 import { normalizeProduct } from "@/lib/normalizeProduct";
@@ -17,7 +17,6 @@ export async function GET(request: NextRequest) {
         const result = await pool.request()
             .input('sCo_Art', sql.NVarChar, parsedCode.data)
             .execute('[dbo].spConsultaPrecioJson');
-
         const row = result.recordset[0];
         if (!row) {
             return NextResponse.json({ error: "Product not found" }, { status: 404 });

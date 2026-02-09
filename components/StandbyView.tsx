@@ -1,57 +1,22 @@
 'use client';
 
 import { useEffect, useState, useMemo, useRef } from 'react';
-// import Image from 'next/image';
+import InfoOverlay from './modals/InfoOverlay';
+import { StandbyViewProps, MediaItem } from '@/types/index.type';
 
 // Shared interfaces (matching ConsultorUI)
-export interface MediaItem {
-    id: string;
-    fileType: string;
-    url: string;
-    start_at: string; // ISO Date String
-    end_at: string;   // ISO Date String
-    duration?: number;
-    position?: number;
-}
 
-export interface PlaylistData {
-    am: MediaItem[];
-    pm: MediaItem[];
-    place_holder?: { id: string; fileType: string; url?: string };
-}
-
-interface StandbyViewProps {
-    playlist: PlaylistData;
-    isActive?: boolean;
-}
 
 const isVideo = (fileType: string) => {
-    return ['mp4', 'webm', 'ogg', 'mov'].includes(fileType.toLowerCase());
+    return ['mp4'].includes(fileType.toLowerCase());
 };
 
-const InfoOverlay = () => (
-    <div className="absolute bottom-10 left-0 right-0 z-20 flex justify-center pointer-events-none">
-        <div className="bg-locatel-fuerte/90 backdrop-blur-md border-2 border-white/30 px-10 py-4 rounded-2xl shadow-2xl flex items-center gap-4 transform hover:scale-105 transition-transform duration-500">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img 
-                src="/logo.webp" 
-                alt="Logo" 
-                className="w-10 h-10 object-contain drop-shadow-md"
-            />
-            <div className="flex flex-col items-start justify-center -space-y-1">
-                <p className="text-white text-xs font-bold tracking-[0.2em] uppercase opacity-80">Sistema</p>
-                <p className="text-white text-xl font-black tracking-widest uppercase drop-shadow-lg">
-                    Consultor de Precios
-                </p>
-            </div>
-        </div>
-    </div>
-);
+
 
 export default function StandbyView({ playlist, isActive = true }: StandbyViewProps) {
     const [allValidItems, setAllValidItems] = useState<MediaItem[]>([]);
     const videoRef = useRef<HTMLVideoElement>(null);
-    
+
     // Independent indices for fluid decoupling
     const [mainIndex, setMainIndex] = useState(0);
     const [sideIndex, setSideIndex] = useState(0);
@@ -64,7 +29,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
             const isAm = hour < 12;
 
             const sourceList = isAm ? playlist.am : playlist.pm;
-            
+
             // Filter by Date Range validity (ISO Strings)
             const validItems = sourceList.filter(item => {
                 if (item.start_at && item.end_at) {
@@ -77,15 +42,15 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
 
             // If list has changed, update.
             setAllValidItems(prev => {
-                 if (prev.length !== validItems.length) return validItems;
-                 let changed = false;
-                 for (let i = 0; i < prev.length; i++) {
-                     if (prev[i].id !== validItems[i].id) {
-                         changed = true;
-                         break;
-                     }
-                 }
-                 return changed ? validItems : prev;
+                if (prev.length !== validItems.length) return validItems;
+                let changed = false;
+                for (let i = 0; i < prev.length; i++) {
+                    if (prev[i].id !== validItems[i].id) {
+                        changed = true;
+                        break;
+                    }
+                }
+                return changed ? validItems : prev;
             });
         };
 
@@ -116,13 +81,13 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
     useEffect(() => {
         if (!isActive) return; // PAUSE TIMER IF NOT ACTIVE
         if (isEmpty) return;
-        
+
         // If we are showing a video (because we have videos), we DO NOT start a timer.
         // The Video Element's onEnded event will trigger the next index.
         if (hasVideos && activeVideo) {
-            return; 
-        } 
-        
+            return;
+        }
+
         // If we are showing an image (because we have NO videos), we use the duration or default 10s.
         if (activeMainImage) {
             const duration = (activeMainImage.duration || 10) * 1000;
@@ -146,7 +111,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
 
         return () => clearInterval(sideTimer);
     }, [hasImages, isActive]);
-    
+
     // Video Playback Control based on Active State
     useEffect(() => {
         if (videoRef.current) {
@@ -159,12 +124,12 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
             }
         }
     }, [isActive, activeVideo]); // Check on active state change or video change
-    
+
     // Handler for Video End/Error to Ensure Rotation
     const handleNextMain = () => {
         setMainIndex(prev => prev + 1);
     };
-    
+
     // --- Render Logic ---
 
     // 1. Placeholder / Empty
@@ -176,44 +141,44 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                 <div className="absolute inset-0 bg-black h-full">
                     {/* Fullscreen Server Placeholder (Video or Image) */}
                     {isPlaceholderVideo ? (
-                         <video 
+                        <video
                             id="placeholder-video"
-                            src={playlist.place_holder.url} 
-                            className="w-full h-full object-cover" 
-                            autoPlay 
-                            muted 
-                            loop 
+                            src={playlist.place_holder.url}
+                            className="w-full h-full object-cover"
+                            autoPlay
+                            muted
+                            loop
                             playsInline
                         />
                     ) : (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img 
-                            src={playlist.place_holder.url} 
-                            alt="Placeholder" 
-                            className="object-cover w-full h-full" 
+                        <img
+                            src={playlist.place_holder.url}
+                            alt="Placeholder"
+                            className="object-cover w-full h-full"
                         />
                     )}
-                    
+
                     {/* Standard Info Overlay */}
                     <InfoOverlay />
                 </div>
             )
         }
-        
-        return null; 
+
+        return null;
     }
 
     // 2. Video Only Mode
     if (hasVideos && !hasImages) {
-         return (
+        return (
             <div className="absolute inset-0 bg-black">
-                <video 
+                <video
                     ref={videoRef}
-                    src={activeVideo!.url} 
-                    className="w-full h-full object-cover" 
-                    autoPlay 
-                    muted 
-                    loop={false} 
+                    src={activeVideo!.url}
+                    className="w-full h-full object-cover"
+                    autoPlay
+                    muted
+                    loop={false}
                     playsInline
                     onEnded={handleNextMain}
                     onError={handleNextMain}
@@ -226,22 +191,22 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
     // 3. Mixed / Image Mode
     const mainContentUrl = hasVideos ? activeVideo!.url : activeMainImage!.url;
     const isMainContentVideo = hasVideos;
-    
+
     // CRITICAL FIX: Removed 'key' props from video/img elements to encourage reuse.
     // This allows the browser to swap the 'src' attribute instantly without destroying the DOM component.
     // This eliminates flickering (black screens) during transitions.
 
     return (
         <div className="absolute inset-0 bg-black grid grid-cols-12 h-full">
-             {/* Left Main Pane (8 cols) - No borders, full bleed */}
-             <div className="col-span-8 relative h-full bg-black flex items-center justify-center p-0 overflow-hidden">
+            {/* Left Main Pane (8 cols) - No borders, full bleed */}
+            <div className="col-span-8 relative h-full bg-black flex items-center justify-center p-0 overflow-hidden">
                 {isMainContentVideo ? (
-                     <video 
+                    <video
                         ref={videoRef}
-                        src={mainContentUrl} 
-                        className="w-full h-full object-cover" 
-                        autoPlay 
-                        muted 
+                        src={mainContentUrl}
+                        className="w-full h-full object-cover"
+                        autoPlay
+                        muted
                         loop={false}
                         playsInline
                         onEnded={handleNextMain}
@@ -250,9 +215,9 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                 ) : (
                     <div className="relative w-full h-full bg-black">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img 
-                            src={mainContentUrl} 
-                            alt="Main Content" 
+                        <img
+                            src={mainContentUrl}
+                            alt="Main Content"
                             className="object-cover w-full h-full"
                         />
                     </div>
@@ -263,29 +228,29 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
             <div className="col-span-4 grid grid-rows-2 h-full bg-black">
                 {/* Top Right Block */}
                 <div className="relative border-b border-white/10 p-0 overflow-hidden bg-black">
-                     {rightTopImage && (
+                    {rightTopImage && (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img 
-                            src={rightTopImage.url} 
-                            alt="Next 1" 
+                        <img
+                            src={rightTopImage.url}
+                            alt="Next 1"
                             className="object-cover w-full h-full"
                         />
-                     )}
+                    )}
                 </div>
-                
+
                 {/* Bottom Right Block */}
                 <div className="relative p-0 overflow-hidden bg-black">
-                     {rightBottomImage && (
-                         // eslint-disable-next-line @next/next/no-img-element
-                         <img 
-                             src={rightBottomImage.url} 
-                             alt="Next 2" 
-                             className="object-cover w-full h-full"
-                         />
-                     )}
+                    {rightBottomImage && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                            src={rightBottomImage.url}
+                            alt="Next 2"
+                            className="object-cover w-full h-full"
+                        />
+                    )}
                 </div>
             </div>
-            
+
             <InfoOverlay />
         </div>
     );
