@@ -40,7 +40,6 @@ export default function ConsultorUI() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-
   const handlerCode = (e: ChangeEvent<HTMLInputElement>) => {
     setCode(e.target.value);
     if (error) setError(null);
@@ -81,15 +80,18 @@ export default function ConsultorUI() {
           method: "GET",
           headers: {
             "Authorization": `Bearer ${process.env.NEXT_PUBLIC_API_KEY_CDS}`
-          }
+          },
+          credentials: "include"
         });
         console.log("Respuesta de autenticación:", resp);
         if (!resp.ok) {
           throw new Error(`Error en la autenticación: ${resp.statusText}`);
         }
+        return true;
       } catch (error) {
         console.error("Error al obtener el token de autenticación:", error);
         setError("Error al autenticar. Por favor, intente nuevamente.");
+        return false;
       }
     };
 
@@ -103,7 +105,7 @@ export default function ConsultorUI() {
 
       console.log("Conectando al SSE...");
       const event = new EventSource(urlConToken.toString(), {
-        withCredentials: true,
+        withCredentials: true
       });
       eventSourceRef.current = event;
 
@@ -223,10 +225,9 @@ export default function ConsultorUI() {
 
     // Bootstrapping
     const bootstrap = async () => {
-      if (!localStorage.getItem("token")) {
-        await fetchAuth();
-      }
-      if (localStorage.getItem("token")) {
+      const isAuth = await fetchAuth();
+
+      if (isAuth) {
         initializeEventSource();
       } else {
         console.error("No se pudo obtener token, reintentando bootstrap en 60s");

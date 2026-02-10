@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo, useRef } from 'react';
+import { parseISO } from 'date-fns';
 import InfoOverlay from './modals/InfoOverlay';
 import { StandbyViewProps, MediaItem } from '@/types/index.type';
 
@@ -33,8 +34,8 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
             // Filter by Date Range validity (ISO Strings)
             const validItems = sourceList.filter(item => {
                 if (item.start_at && item.end_at) {
-                    const start = new Date(item.start_at);
-                    const end = new Date(item.end_at);
+                    const start = parseISO(item.start_at);
+                    const end = parseISO(item.end_at);
                     return now >= start && now <= end;
                 }
                 return true;
@@ -45,7 +46,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                 if (prev.length !== validItems.length) return validItems;
                 let changed = false;
                 for (let i = 0; i < prev.length; i++) {
-                    if (prev[i].id !== validItems[i].id) {
+                    if (prev[i].id !== validItems[i].id || prev[i].fileType !== validItems[i].fileType || prev[i].url !== validItems[i].url) {
                         changed = true;
                         break;
                     }
@@ -117,7 +118,14 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
         if (videoRef.current) {
             if (isActive) {
                 // Return to play if we became active
-                videoRef.current.play().catch(e => console.error("Resume/Play error:", e));
+                const playPromise = videoRef.current.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        if (error.name !== 'AbortError') {
+                            console.error("Resume/Play error:", error);
+                        }
+                    });
+                }
             } else {
                 // Pause if we became inactive
                 videoRef.current.pause();
@@ -176,7 +184,6 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                     ref={videoRef}
                     src={activeVideo!.url}
                     className="w-full h-full object-cover"
-                    autoPlay
                     muted
                     loop={false}
                     playsInline
@@ -205,7 +212,6 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                         ref={videoRef}
                         src={mainContentUrl}
                         className="w-full h-full object-cover"
-                        autoPlay
                         muted
                         loop={false}
                         playsInline
