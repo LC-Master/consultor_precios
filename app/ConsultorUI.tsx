@@ -32,7 +32,6 @@ function deepEqual(obj1: any, obj2: any): boolean {
 
 export default function ConsultorUI() {
   const TIMEOUT = `${process.env.NEXT_PUBLIC_TIMEOUT_SECONDS}s` || "25s";
-  // Initialize with empty playlist so StandbyView can render its default state even if API fails
   const [playlist, setPlaylist] = useState<PlaylistData>({ am: [], pm: [] });
   const TIMEOUT_MS = ms(TIMEOUT as StringValue);
   const [code, setCode] = useState("");
@@ -43,27 +42,35 @@ export default function ConsultorUI() {
   const handlerCode = (e: ChangeEvent<HTMLInputElement>) => {
     setCode(e.target.value);
     if (error) setError(null);
-  }
+  }                    
 
   const eventUrl = useMemo(() => new URL(process.env.NEXT_PUBLIC_API_URL_CDS + "events"), []);
   const authUrl = useMemo(() => new URL(process.env.NEXT_PUBLIC_API_URL_CDS + "auth/login/device"), []);
 
-  const fetchWithAuth = useCallback(async function <T>(url: URL) {
+  const fetchWithAuth = useCallback(async function <T>(url: URL, options: RequestInit = {}) {
     try {
       const resp = await fetch(url.toString(), {
         method: "GET",
         headers: {
-          "Authorization": `Bearer ${process.env.NEXT_PUBLIC_API_KEY_CDS}`
-        }
+          "Authorization": `Bearer ${process.env.NEXT_PUBLIC_API_KEY_CDS}`,
+          ...options.headers
+        },
+        ...options
       });
 
       if (!resp.ok) {
         console.error(`Fetch Error: ${resp.status} ${resp.statusText}`);
         throw new Error(`Error en la petición: ${resp.status} ${resp.statusText}`);
       }
-
-      const data = await resp.json() as T;
-      return data;
+      
+      const contentType = resp.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+         const data = await resp.json() as T;
+         return data;
+      }
+      
+      return true as unknown as T;
+      
     } catch (error) {
       console.error("Error fetching data:", error);
       throw error;
@@ -74,37 +81,14 @@ export default function ConsultorUI() {
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    const fetchAuth = async () => {
-      try {
-        const resp = await fetch(authUrl, {
-          method: "GET",
-          headers: {
-            "Authorization": `Bearer ${process.env.NEXT_PUBLIC_API_KEY_CDS}`
-          },
-          credentials: "include"
-        });
-        console.log("Respuesta de autenticación:", resp);
-        if (!resp.ok) {
-          throw new Error(`Error en la autenticación: ${resp.statusText}`);
-        }
-        return true;
-      } catch (error) {
-        console.error("Error al obtener el token de autenticación:", error);
-        setError("Error al autenticar. Por favor, intente nuevamente.");
-        return false;
-      }
-    };
-
     const initializeEventSource = () => {
       // Clear any pending retry
       if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
       // Close any existing connection
       if (eventSourceRef.current) eventSourceRef.current.close();
 
-      const urlConToken = new URL(eventUrl.toString());
-
       console.log("Conectando al SSE...");
-      const event = new EventSource(urlConToken.toString(), {
+      const event = new EventSource(eventUrl, {
         withCredentials: true
       });
       eventSourceRef.current = event;
@@ -225,11 +209,14 @@ export default function ConsultorUI() {
 
     // Bootstrapping
     const bootstrap = async () => {
-      const isAuth = await fetchAuth();
-
-      if (isAuth) {
+      try {
+        await fetchWithAuth(authUrl, { credentials: "include" });
+        console.log("Autenticación exitosa");
         initializeEventSource();
-      } else {
+      } catch (error) {
+        console.error("Error al obtener el token de autenticación:", error);
+        setError("Error al autenticar. Por favor, intente nuevamente.");
+
         console.error("No se pudo obtener token, reintentando bootstrap en 60s");
         retryTimeoutRef.current = setTimeout(bootstrap, 60000);
       }
