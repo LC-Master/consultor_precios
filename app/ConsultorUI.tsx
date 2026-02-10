@@ -9,7 +9,7 @@ import ErrorView from "@/components/ErrorView";
 import getProduct from "@/lib/getProduct";
 import { Input } from "@/components/ui/Input";
 import StandbyView from "@/components/StandbyView";
-import { PlaylistData } from "@/types/index.type";
+import { PlaylistData, ApiPlaylistRoot } from "@/types/index.type";
 
 // Utility for deep comparison
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -32,7 +32,8 @@ function deepEqual(obj1: any, obj2: any): boolean {
 
 export default function ConsultorUI() {
   const TIMEOUT = `${process.env.NEXT_PUBLIC_TIMEOUT_SECONDS}s` || "25s";
-  const [playlist, setPlaylist] = useState<PlaylistData>({ am: [], pm: [] });
+  // Initial state includes campaigns support
+  const [playlist, setPlaylist] = useState<PlaylistData>({ campaigns: [] });
   const TIMEOUT_MS = ms(TIMEOUT as StringValue);
   const [code, setCode] = useState("");
   const [product, setProduct] = useState<Product | null>(null);
@@ -95,27 +96,31 @@ export default function ConsultorUI() {
 
       const fetchPlaylist = async () => {
         try {
-          // Inferred type from API based on usage
-          interface ApiPlaylistRoot {
-            am: { id: string; fileType: string; start_at: string; end_at: string; duration?: number }[];
-            pm: { id: string; fileType: string; start_at: string; end_at: string; duration?: number }[];
-            place_holder: { id: string; fileType: string } | null;
-          }
-
           const resp = await fetchWithAuth<ApiPlaylistRoot>(new URL(process.env.NEXT_PUBLIC_API_URL_CDS + "playlist"));
 
           if (resp) {
             // DATA TRANSFORMATION: Map ID to full URL
             const baseUrl = process.env.NEXT_PUBLIC_API_URL_CDS + "media/";
-
-            const transformItem = (item: { id: string, fileType: string, start_at: string, end_at: string, duration?: number }) => ({
+            
+            // Helper to transform individual items
+            const transformItem = (item: { id: string, fileType?: string, start_at: string, end_at: string, duration?: number, position?: number }) => ({
               ...item,
-              url: `${baseUrl}${item.id}.${item.fileType}`
+              fileType: item.fileType || 'jpg', // Default fallback
+              url: `${baseUrl}${item.id}.${item.fileType || 'jpg'}`
             });
 
+            // If the response follows the new structure with campaigns
+            const campaigns = resp.campaigns || [];
+            
+            // Reconstruct campaigns including URL transformation
+            const transformedCampaigns = campaigns.map(campaign => ({
+                ...campaign,
+                am: (campaign.am || []).map(item => transformItem(item)).sort((a, b) => (a.position || 0) - (b.position || 0)),
+                pm: (campaign.pm || []).map(item => transformItem(item)).sort((a, b) => (a.position || 0) - (b.position || 0))
+            }));
+
             const transformedPlaylist: PlaylistData = {
-              am: resp.am?.map(item => transformItem(item)) || [],
-              pm: resp.pm?.map(item => transformItem(item)) || [],
+              campaigns: transformedCampaigns,
               place_holder: resp.place_holder
                 ? {
                   id: resp.place_holder.id,
@@ -152,12 +157,18 @@ export default function ConsultorUI() {
             };
 
             // Gather all items to preload
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const items: any[] = [
-              ...transformedPlaylist.am,
-              ...transformedPlaylist.pm,
-              ...(transformedPlaylist.place_holder ? [transformedPlaylist.place_holder] : [])
-            ];
+            // We combine items from campaigns and the placeholder if it exists for preloading assets
+            const items: { url: string; fileType: string }[] = transformedCampaigns.flatMap((c) => [
+              ...c.am,
+              ...c.pm
+            ]);
+            
+            if (transformedPlaylist.place_holder && transformedPlaylist.place_holder.url) {
+                items.push({
+                    url: transformedPlaylist.place_holder.url,
+                    fileType: transformedPlaylist.place_holder.fileType
+                });
+            }
 
             const promises = items.map(item => preloadMedia(item.url, item.fileType));
 
@@ -270,7 +281,7 @@ export default function ConsultorUI() {
   // Determine if we are in "Standby" (Idle) mode:
   // No active product result, no error message, no user typing (code is empty).
   const isStandby = !product && !error && !code;
-  const hasContent = playlist && (playlist.am.length > 0 || playlist.pm.length > 0 || !!playlist.place_holder);
+  const hasContent = playlist && ((playlist.campaigns && playlist.campaigns.length > 0) || !!playlist.place_holder);
 
   return (
     <main className="relative h-full w-full bg-slate-50 overflow-hidden flex flex-col items-center justify-center p-4">

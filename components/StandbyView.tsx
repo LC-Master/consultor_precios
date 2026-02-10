@@ -29,7 +29,16 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
             const hour = now.getHours();
             const isAm = hour < 12;
 
-            const sourceList = isAm ? playlist.am : playlist.pm;
+            // Collect all items from all campaigns for the current time slot
+            const sourceList: MediaItem[] = [];
+            if (playlist.campaigns) {
+                 playlist.campaigns.forEach(campaign => {
+                     const list = isAm ? campaign.am : campaign.pm;
+                     if (list) {
+                         sourceList.push(...list);
+                     }
+                 });
+            }
 
             // Filter by Date Range validity (ISO Strings)
             const validItems = sourceList.filter(item => {
