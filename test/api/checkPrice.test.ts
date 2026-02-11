@@ -1,4 +1,4 @@
-import { describe, it, beforeAll, spyOn, expect } from "bun:test"
+﻿import { describe, it, beforeAll, spyOn, expect } from "bun:test"
 import { GET } from "../../app/api/check-price/route";
 import { NextRequest } from "next/server";
 import { pool } from "@/src/provider/pool.provider";
@@ -17,7 +17,7 @@ describe("checkPrice API validations tests", () => {
                 execute: async () => ({
                     recordset: [
                         {
-                            'JSON_F52E2B61-18A1-11d1-B105-00805F49916B': '{"CodArticulo":"2103931","CodBarra":"7591440409094                 ","Bloqueado":false,"Descripcion":"ELEMENTAL CREMA CORP TE VER PE","PrecioBase":2236.5100,"Iva":1.6000000e+001,"PrecioIva":2.594350000000000e+003,"PrecioRef":7.130000000000000e+000,"Tasa":3.636600000000000e+002,"TasaEuro":4.344300000000000e+002,"NomProm":"Descuento 30%","PrecioBaseProm":1.565560000000000e+003,"PrecioIVAProm":1.816050000000000e+003,"PrecioRefProm":4.990000000000000e+000,"PorcDesc":3.000000000000000e+001}'
+                            'JSON_F52E2B61-18A1-11d1-B105-00805F49916B': '{"CodArticulo":"2103931","CodBarra":"7591440409094                 ","Bloqueado":false,"Descripcion":"ELEMENTAL CREMA CORP TE VER PE","PrecioBase":2236.5100,"PctIva":1.6000000e+001,"MontoIva":3.578400000000000e+002,"PrecioIva":2.594350000000000e+003,"PrecioRef":7.130000000000000e+000,"Tasa":3.636600000000000e+002,"TasaEuro":4.344300000000000e+002,"NomProm":"Descuento 30%","PrecioBaseProm":1.565560000000000e+003,"MontoIvaProm":2.504900000000000e+002,"PrecioIVAProm":1.816050000000000e+003,"PrecioRefProm":4.990000000000000e+000,"PorcDesc":3.000000000000000e+001}'
                         }
                     ],
                     recordsets: [],
@@ -57,7 +57,7 @@ describe("checkPrice API validations tests", () => {
                 execute: async () => ({
                     recordset: [
                         {
-                            'JSON_F52E2B61-18A1-11d1-B105-00805F49916B': '{"CodArticulo":"2103931","CodBarra":"7591440409094                 ","Bloqueado":false,"Descripcion":"ELEMENTAL CREMA CORP TE VER PE","PrecioBase":2236.5100,"Iva":1.6000000e+001,"PrecioIva":2.594350000000000e+003,"PrecioRef":7.130000000000000e+000,"Tasa":3.636600000000000e+002,"TasaEuro":4.344300000000000e+002,"NomProm":"Descuento 30%","PrecioBaseProm":1.565560000000000e+003,"PrecioIVAProm":1.816050000000000e+003,"PrecioRefProm":4.990000000000000e+000,"PorcDesc":3.000000000000000e+001}'
+                            'JSON_F52E2B61-18A1-11d1-B105-00805F49916B': '{"CodArticulo":"2103931","CodBarra":"7591440409094                 ","Bloqueado":false,"Descripcion":"ELEMENTAL CREMA CORP TE VER PE","PrecioBase":2236.5100,"PctIva":1.6000000e+001,"MontoIva":3.578400000000000e+002,"PrecioIva":2.594350000000000e+003,"PrecioRef":7.130000000000000e+000,"Tasa":3.636600000000000e+002,"TasaEuro":4.344300000000000e+002,"NomProm":"Descuento 30%","PrecioBaseProm":1.565560000000000e+003,"MontoIvaProm":2.504900000000000e+002,"PrecioIVAProm":1.816050000000000e+003,"PrecioRefProm":4.990000000000000e+000,"PorcDesc":3.000000000000000e+001}'
                         }
                     ],
                     recordsets: [],
@@ -81,6 +81,7 @@ describe("checkPrice API validations tests", () => {
                 priceWithTax: 2594.35,
                 referencePrice: 7.13,
                 tax: 16,
+                taxAmount: 357.84,
             },
             promotion: {
                 basePrice: 1565.56,
@@ -89,6 +90,7 @@ describe("checkPrice API validations tests", () => {
                 priceWithTax: 1816.05,
                 referencePrice: 4.99,
                 savings: 778.3,
+                taxAmount: 250.49,
             },
             rate: {
                 dollar: 363.66,
@@ -104,7 +106,7 @@ describe("checkPrice API validations tests", () => {
                     execute: async () => ({
                         recordset: [
                             {
-                                'JSON_F52E2B61-18A1-11d1-B105-00805F49916B': '{"CodArticulo":"2103931","CodBarra":"7591440409094                 ","Bloqueado":false,"Descripcion":"ELEMENTAL CREMA CORP TE VER PE","PrecioBase":2236.5100,"Iva":1.6000000e+001,"PrecioIva":2.594350000000000e+003,"PrecioRef":7.130000000000000e+000,"Tasa":3.636600000000000e+002,"TasaEuro":4.344300000000000e+002,"NomProm":"Descuento 30%","PrecioBaseProm":1.565560000000000e+003,"PrecioIVAProm":1.816050000000000e+003,"PrecioRefProm":4.990000000000000e+000,"PorcDesc":3.000000000000000e+001}'
+                                'JSON_F52E2B61-18A1-11d1-B105-00805F49916B': '{"CodArticulo":"2103931","CodBarra":"7591440409094                 ","Bloqueado":false,"Descripcion":"ELEMENTAL CREMA CORP TE VER PE","PrecioBase":2236.5100,"PctIva":1.6000000e+001,"MontoIva":3.578400000000000e+002,"PrecioIva":2.594350000000000e+003,"PrecioRef":7.130000000000000e+000,"Tasa":3.636600000000000e+002,"TasaEuro":4.344300000000000e+002,"NomProm":"Descuento 30%","PrecioBaseProm":1.565560000000000e+003,"MontoIvaProm":2.504900000000000e+002,"PrecioIVAProm":1.816050000000000e+003,"PrecioRefProm":4.990000000000000e+000,"PorcDesc":3.000000000000000e+001}'
                             }
                         ],
                         recordsets: [],
@@ -129,6 +131,7 @@ describe("checkPrice API validations tests", () => {
                 priceWithTax: 1816.05,
                 referencePrice: 4.99,
                 savings: 778.3,
+                taxAmount: 250.49,
             });
         });
     })
@@ -141,7 +144,7 @@ describe("checkPrice API validations tests", () => {
                     execute: async () => ({
                         recordset: [
                             {
-                                'JSON_F52E2B61-18A1-11d1-B105-00805F49916B': '{"CodArticulo":"2103932","CodBarra":"7591440409095                 ","Bloqueado":false,"Descripcion":"ELEMENTAL CREMA CORP TE VER PE","PrecioBase":2236.5100,"Iva":1.6000000e+001,"PrecioIva":2.594350000000000e+003,"PrecioRef":7.130000000000000e+000,"Tasa":3.636600000000000e+002,"TasaEuro":4.344300000000000e+002}'
+                                'JSON_F52E2B61-18A1-11d1-B105-00805F49916B': '{"CodArticulo":"2103932","CodBarra":"7591440409095                 ","Bloqueado":false,"Descripcion":"ELEMENTAL CREMA CORP TE VER PE","PrecioBase":2236.5100,"PctIva":1.6000000e+001,"MontoIva":3.578400000000000e+002,"PrecioIva":2.594350000000000e+003,"PrecioRef":7.130000000000000e+000,"Tasa":3.636600000000000e+002,"TasaEuro":4.344300000000000e+002}'
                             }
                         ],
                         recordsets: [],
@@ -169,6 +172,7 @@ describe("checkPrice API validations tests", () => {
                     priceWithTax: 2594.35,
                     referencePrice: 7.13,
                     tax: 16,
+                    taxAmount: 357.84,
                 },
                 rate: {
                     dollar: 363.66,
