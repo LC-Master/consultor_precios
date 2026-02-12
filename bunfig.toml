@@ -1,4 +1,4 @@
 [test]
 coverage = true
-preload = ["./happydom.ts"]
+preload = ["./test/setup.ts"]
 

@@ -1,30 +1,25 @@
-import { beforeAll, describe, expect, it, mock } from "bun:test";
+import { describe, expect, it, mock } from "bun:test";
 import { createRef } from "react";
-import { renderToString } from "react-dom/server";
+import { render, screen } from "@testing-library/react";
+import ProductView from "@/components/ProductView";
 import type { Product } from "@/types/product.type";
 
-type ProductViewComponent = (typeof import("@/components/ProductView"))["default"];
-
-let ProductView: ProductViewComponent;
-
-beforeAll(async () => {
-    mock.module("next/image", () => ({
-        __esModule: true,
-        default: ({ alt, ...rest }: { alt?: string }) => {
-            return <img alt={alt} {...rest} />;
-        },
-    }));
-
-    ProductView = (await import("@/components/ProductView")).default;
-});
+// Mock next/image
+mock.module("next/image", () => ({
+    __esModule: true,
+    default: ({ alt, ...rest }: { alt?: string }) => {
+        // eslint-disable-next-line @next/next/no-img-element
+        return <img alt={alt} {...rest} />;
+    },
+}));
 
 describe("ProductView", () => {
     it("should render nothing when product is null", () => {
-        const html = renderToString(
+        const { container } = render(
             <ProductView product={null as unknown as Product} inputRef={createRef()} />
         );
 
-        expect(html).toBe("");
+        expect(container.firstChild).toBeNull();
     });
 
     it("should render regular pricing information when there is no promotion", () => {
@@ -47,16 +42,12 @@ describe("ProductView", () => {
             },
         };
 
-        const html = renderToString(
-            <ProductView product={product} inputRef={createRef()} />
-        );
+        render(<ProductView product={product} inputRef={createRef()} />);
 
-        const sanitizedHtml = html.replace(/<!--.*?-->/g, "");
-
-        expect(sanitizedHtml).toContain("Regular");
-        expect(sanitizedHtml).not.toContain("PRECIO REF PROM");
-        expect(sanitizedHtml).toContain("1,60 Bs");
-        expect(sanitizedHtml).toContain("3,50 $");
+        expect(screen.getByText("Regular")).toBeDefined();
+        expect(screen.queryByText("PRECIO REF PROM")).toBeNull();
+        expect(screen.getAllByText("1,60 Bs").length).toBeGreaterThan(0);
+        expect(screen.getAllByText("3,50 $").length).toBeGreaterThan(0);
     });
 
     it("should highlight promotion details when available", () => {
@@ -87,15 +78,46 @@ describe("ProductView", () => {
             },
         };
 
-        const html = renderToString(
-            <ProductView product={product} inputRef={createRef()} />
-        );
+        render(<ProductView product={product} inputRef={createRef()} />);
 
-        const sanitizedHtml = html.replace(/<!--.*?-->/g, "");
+        expect(screen.getByText("Descuento Especial")).toBeDefined();
+        expect(screen.getByText("-30%")).toBeDefined();
+        expect(screen.getByText("PRECIO REF PROM")).toBeDefined();
+        expect(screen.getByText((content) => content.includes("Ahorra"))).toBeDefined();
+    });
 
-        expect(sanitizedHtml).toContain("Descuento Especial");
-        expect(sanitizedHtml).toContain("-30%");
-        expect(sanitizedHtml).toContain("PRECIO REF PROM");
-        expect(sanitizedHtml).toContain("Ahorra");
+    it("should handle invalid price values gracefully", () => {
+        const product: Product = {
+            articleCode: 3030,
+            barCode: 1112223334445,
+            description: "Producto sin precios",
+            isBlocked: false,
+            prices: {
+                base: 0,
+                tax: 16,
+                taxAmount: 0,
+                priceWithTax: 10,
+                referencePrice: NaN,
+            },
+            promotion: {
+                name: "Prom null",
+                basePrice: null,
+                priceWithTax: null,
+                referencePrice: null,
+                discountPercentage: null,
+                savings: null,
+                taxAmount: null,
+            },
+            rate: {
+                dollar: undefined,
+                euro: undefined,
+            },
+        };
+
+        render(<ProductView product={product} inputRef={createRef()} />);
+
+        // Should still render wrapper and not show "null" strings
+        expect(screen.getByText("Producto sin precios")).toBeDefined();
+        expect(screen.queryByText("null")).toBeNull();
     });
 });

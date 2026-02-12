@@ -98,6 +98,45 @@ describe("checkPrice API validations tests", () => {
             },
         });
     });
+
+    it("should return 500 when product schema validation fails", async () => {
+        spyOn(pool, "request").mockReturnValue({
+            input: () => ({
+                execute: async () => ({
+                    recordset: [
+                        {
+                            // Missing required fields to fail zod parsing
+                            'JSON_F52E2B61-18A1-11d1-B105-00805F49916B': '{"unexpected":"value"}'
+                        }
+                    ],
+                    recordsets: [],
+                    rowsAffected: [],
+                    output: {},
+                    returnValue: 0,
+                })
+            })
+        } as unknown as ReturnType<typeof pool.request>);
+
+        const request = new NextRequest("http://localhost/api/check-price?code=7591440409094");
+        const response = await GET(request);
+        const data = await response.json();
+
+        expect(response.status).toBe(500);
+        expect(data).toEqual({ error: "Invalid product data structure" });
+    });
+
+    it("should return 500 on server errors", async () => {
+        spyOn(pool, "request").mockImplementation(() => {
+            throw new Error("db down");
+        });
+
+        const request = new NextRequest("http://localhost/api/check-price?code=7591440409094");
+        const response = await GET(request);
+        const data = await response.json();
+
+        expect(response.status).toBe(500);
+        expect(data).toEqual({ error: "Internal Server Error" });
+    });
     describe("checkPrice API with promotion", () => {
 
         beforeAll(() => {
