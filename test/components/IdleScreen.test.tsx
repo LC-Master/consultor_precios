@@ -7,17 +7,6 @@ describe("IdleScreen", () => {
         render(<IdleScreen />);
 
         expect(screen.getByText("Consulta Aquí")).toBeDefined();
-        // Check for opacity-100 class
-        const container = screen.getByText("Consulta Aquí").closest('div'); // The inner container or parent
-        // Actually, opacity is on the root div.
-        // Let's find the root div.
-        // We can query by text and go up, or add a data-testid. 
-        // Or inspect the container.firstChild.
-        // But testing implementation details like class names is fine if that's the requirement.
-        
-        // Let's assume we want to check visibility. 
-        // But opacity-100 is a tailwind class.
-        // I'll stick to class check on the element matching the structure.
     });
 
     it("should hide the component when hidden flag is true", () => {
