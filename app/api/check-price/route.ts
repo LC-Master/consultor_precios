@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import sql from 'mssql';
 import { pool } from "@/src/provider/pool.provider";
 import { normalizeProduct } from "@/lib/normalizeProduct";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
     const code = request.nextUrl.searchParams.get("code");
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
         const parsedInfo = productSchema.safeParse(rawData);
 
         if (!parsedInfo.success) {
-            console.error("Zod Validation Error:", parsedInfo.error.issues);
+            logger.error({ message: "Zod Validation Error", errors: parsedInfo.error.issues });
             return NextResponse.json({ error: "Invalid product data structure" }, { status: 500 });
         }
 
@@ -41,9 +42,9 @@ export async function GET(request: NextRequest) {
 
     } catch (error: unknown) {
         if (error instanceof Error) {
-            console.error("Server Error:", error.message);
+            logger.error({ message: "Server Error", error: error.message });
         } else {
-            console.error("Server Error:", error);
+            logger.error({ message: "Server Error", error });
         }
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
