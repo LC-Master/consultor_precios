@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import ConsultorUI from "./ConsultorUI";
+import ConsultorUI from "../../components/ui/ConsultorUI";
 
 export const metadata: Metadata = {
   title: 'Consultor de Precios LOCATEL',
