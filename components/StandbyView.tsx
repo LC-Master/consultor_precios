@@ -157,7 +157,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
 
         // Rotate side images every 8 seconds, completely independent of the video
         const sideTimer = setInterval(() => {
-            setSideIndex(prev => prev + 1);
+            setSideIndex(prev => prev + 2);
         }, 8000);
 
         return () => clearInterval(sideTimer);
