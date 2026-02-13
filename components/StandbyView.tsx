@@ -5,14 +5,10 @@ import { parseISO } from 'date-fns';
 import InfoOverlay from './modals/InfoOverlay';
 import { StandbyViewProps, MediaItem } from '@/types/index.type';
 import ms from 'ms';
-
-const isVideo = (fileType: string) => {
-    return ['mp4'].includes(fileType.toLowerCase());
-};
-
-const FAILED_MEDIA_COOLDOWN_MS = ms(process.env.NEXT_PUBLIC_FAILED_MEDIA_COOLDOWN_S || '5s');
+import { isVideo } from '@/lib/isVideo';
 
 export default function StandbyView({ playlist, isActive = true }: StandbyViewProps) {
+    const FAILED_MEDIA_COOLDOWN_MS = ms(process.env.NEXT_PUBLIC_FAILED_MEDIA_COOLDOWN_S || '5s');
     const [allValidItems, setAllValidItems] = useState<MediaItem[]>([]);
     const [failedUntilByUrl, setFailedUntilByUrl] = useState<Record<string, number>>({});
     const [nowMs, setNowMs] = useState(() => Date.now());
@@ -95,7 +91,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                 return next;
             });
         }, FAILED_MEDIA_COOLDOWN_MS + 250);
-    }, []);
+    }, [FAILED_MEDIA_COOLDOWN_MS]);
 
     const handleMainMediaFailure = useCallback((item: MediaItem | null, reason: string) => {
         markMediaTemporarilyFailed(item, reason);
