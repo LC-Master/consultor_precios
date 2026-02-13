@@ -61,7 +61,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
         };
 
         updateContent();
-        const interval = setInterval(updateContent, 60000);
+        const interval = setInterval(updateContent, ms('60s'));
         return () => clearInterval(interval);
     }, [playlist]);
 
@@ -158,7 +158,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
         // Rotate side images every 8 seconds, completely independent of the video
         const sideTimer = setInterval(() => {
             setSideIndex(prev => prev + 2);
-        }, 8000);
+        }, ms('8s'));
 
         return () => clearInterval(sideTimer);
     }, [hasImages, isActive]);
