@@ -68,7 +68,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
     useEffect(() => {
         const timer = setInterval(() => {
             setNowMs(Date.now());
-        }, 1000);
+        }, ms('1s'));
         return () => clearInterval(timer);
     }, []);
 
