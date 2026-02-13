@@ -10,7 +10,7 @@ export default function Header() {
             <div className=' bg-white shadow-md w-full flex justify-between items-center rounded-3xl'>
                 <div className="flex bg-white ml-2 p-2 rounded-lg items-center gap-3">
                     <div className="bg-gray-200 p-2 rounded-lg">
-                        <Image src="/logo.webp" alt="Locatel Logo" width={34} height={34} />
+                        <Image src="/logo.webp" alt="Locatel Logo" itemType='image/webp' width={34} height={34} />
                     </div>
                     <div className="">
                         <h1 className="text-lg font-bold tracking-tight leading-none">LOCATEL</h1>

@@ -23,5 +23,5 @@ export default function proxy(req: NextRequest) {
 }
 
 export const config = {
-    matcher: '/api/:path*',
+    matcher: '/((?!api|_next/static|_next/image|favicon.ico|logo.webp|sw.js|manifest.webmanifest|icons).*)',
 };

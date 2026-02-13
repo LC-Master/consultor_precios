@@ -128,6 +128,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
             if (isActive) {
                 // Return to play if we became active
                 const playPromise = videoRef.current.play();
+                videoRef.current.disablePictureInPicture = true; 
                 if (playPromise !== undefined) {
                     playPromise.catch(error => {
                         if (error.name !== 'AbortError') {

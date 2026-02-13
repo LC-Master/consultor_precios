@@ -43,6 +43,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+#service worker to avoid caching issues during development
+public/sw*
+public/swe-worker*
+
 /app/generated/prisma
 
 /generated/prisma
