@@ -1,3 +1,4 @@
+import { StringValue } from "ms";
 import z from "zod";
 
 export const envSchema = z.object(
@@ -38,6 +39,14 @@ export const envSchema = z.object(
       .nonempty("NEXT_PUBLIC_API_URL_CDS no puede estar vacío")
       .nonoptional({ error: "NEXT_PUBLIC_API_URL_CDS es obligatorio" })
       .describe("URL base de la API de CDS"),
+    NEXT_PUBLIC_FAILED_MEDIA_COOLDOWN_S: z.coerce.number({
+      error: "NEXT_PUBLIC_FAILED_MEDIA_COOLDOWN_S debe ser un número representando segundos"
+    }).int({ message: "NEXT_PUBLIC_FAILED_MEDIA_COOLDOWN_S debe ser un número entero" })
+      .min(0, "NEXT_PUBLIC_FAILED_MEDIA_COOLDOWN_S no puede ser negativo")
+      .max(3600, "NEXT_PUBLIC_FAILED_MEDIA_COOLDOWN_S no puede ser mayor a 3600 segundos (1 hora)")
+      .describe("Tiempo en segundos para evitar reintentos de medios fallidos")
+      .default(5)
+      .transform((seconds) => `${seconds}s` as StringValue),
     NEXT_PUBLIC_API_KEY_CDS: z
       .jwt({ error: "NEXT_PUBLIC_API_KEY_CDS debe ser un JWT válido" })
       .min(1, "NEXT_PUBLIC_API_KEY_CDS no puede estar vacío")

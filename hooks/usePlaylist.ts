@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { PlaylistData, ApiPlaylistRoot, MediaItem, Campaign } from "@/types/index.type";
+import { PlaylistData, ApiPlaylistRoot} from "@/types/index.type";
 import { useAuthenticatedFetch } from './useAuthenticatedFetch';
 import { deepEqual } from '@/lib/deepEqual';
 
@@ -11,6 +11,7 @@ export function usePlaylist() {
 
     const eventUrl = useMemo(() => new URL(process.env.NEXT_PUBLIC_API_URL_CDS + "events"), []);
     const authUrl = useMemo(() => new URL(process.env.NEXT_PUBLIC_API_URL_CDS + "auth/login/device"), []);
+    const mediaBaseUrl = useMemo(() => new URL("media/", process.env.NEXT_PUBLIC_API_URL_CDS).toString(), []);
 
     useEffect(() => {
         const initializeEventSource = () => {
@@ -28,13 +29,21 @@ export function usePlaylist() {
                     const resp = await fetchWithAuth<ApiPlaylistRoot>(new URL(process.env.NEXT_PUBLIC_API_URL_CDS + "playlist"));
 
                     if (resp) {
-                        const baseUrl = process.env.NEXT_PUBLIC_API_URL_CDS + "media/";
-                        
-                        const transformItem = (item: { id: string, fileType?: string, start_at: string, end_at: string, duration?: number, position?: number }) => ({
-                            ...item,
-                            fileType: item.fileType || 'jpg',
-                            url: `${baseUrl}${item.id}.${item.fileType || 'jpg'}`
-                        });
+                        const normalizeFileType = (fileType?: string, fallback = 'jpg') => {
+                            const normalized = fileType?.replace('.', '').trim().toLowerCase();
+                            return normalized || fallback;
+                        };
+
+                        const buildMediaUrl = (id: string, fileType: string) => `${mediaBaseUrl}${id}.${fileType}`;
+
+                        const transformItem = (item: { id: string, fileType?: string, start_at: string, end_at: string, duration?: number, position?: number }) => {
+                            const normalizedFileType = normalizeFileType(item.fileType, 'jpg');
+                            return {
+                                ...item,
+                                fileType: normalizedFileType,
+                                url: buildMediaUrl(item.id, normalizedFileType)
+                            };
+                        };
 
                         const campaigns = resp.campaigns || [];
                         
@@ -49,8 +58,8 @@ export function usePlaylist() {
                             place_holder: resp.place_holder
                                 ? {
                                     id: resp.place_holder.id,
-                                    fileType: resp.place_holder.fileType,
-                                    url: `${baseUrl}${resp.place_holder.id}.${resp.place_holder.fileType}`
+                                    fileType: normalizeFileType(resp.place_holder.fileType, 'jpg'),
+                                    url: buildMediaUrl(resp.place_holder.id, normalizeFileType(resp.place_holder.fileType, 'jpg'))
                                 }
                                 : undefined
                         };
@@ -62,7 +71,9 @@ export function usePlaylist() {
                                 if (isVideo) {
                                     const video = document.createElement('video');
                                     video.preload = 'auto';
-                                    video.onloadeddata = () => resolve();
+                                    video.onloadeddata = () => {
+                                        resolve();
+                                    };
                                     video.onerror = () => {
                                         console.warn(`Failed to preload video: ${url}`);
                                         resolve();
@@ -94,7 +105,9 @@ export function usePlaylist() {
                         }
 
                         const promises = items.map(item => preloadMedia(item.url, item.fileType));
-                        if (promises.length > 0) await Promise.all(promises);
+                        if (promises.length > 0) {
+                            void Promise.all(promises);
+                        }
 
                         setPlaylist(prev => {
                             if (deepEqual(prev, transformedPlaylist)) return prev;
@@ -153,7 +166,7 @@ export function usePlaylist() {
             }
             if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
         };
-    }, [authUrl, eventUrl, fetchWithAuth]);
+    }, [authUrl, eventUrl, fetchWithAuth, mediaBaseUrl]);
 
     return playlist;
 }

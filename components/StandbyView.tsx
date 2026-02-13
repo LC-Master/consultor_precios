@@ -1,21 +1,21 @@
 'use client';
 
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { parseISO } from 'date-fns';
 import InfoOverlay from './modals/InfoOverlay';
 import { StandbyViewProps, MediaItem } from '@/types/index.type';
-
-// Shared interfaces (matching ConsultorUI)
-
+import ms from 'ms';
 
 const isVideo = (fileType: string) => {
     return ['mp4'].includes(fileType.toLowerCase());
 };
 
-
+const FAILED_MEDIA_COOLDOWN_MS = ms(process.env.NEXT_PUBLIC_FAILED_MEDIA_COOLDOWN_S || '5s');
 
 export default function StandbyView({ playlist, isActive = true }: StandbyViewProps) {
     const [allValidItems, setAllValidItems] = useState<MediaItem[]>([]);
+    const [failedUntilByUrl, setFailedUntilByUrl] = useState<Record<string, number>>({});
+    const [nowMs, setNowMs] = useState(() => Date.now());
     const videoRef = useRef<HTMLVideoElement>(null);
 
     // Independent indices for fluid decoupling
@@ -32,12 +32,12 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
             // Collect all items from all campaigns for the current time slot
             const sourceList: MediaItem[] = [];
             if (playlist.campaigns) {
-                 playlist.campaigns.forEach(campaign => {
-                     const list = isAm ? campaign.am : campaign.pm;
-                     if (list) {
-                         sourceList.push(...list);
-                     }
-                 });
+                playlist.campaigns.forEach(campaign => {
+                    const list = isAm ? campaign.am : campaign.pm;
+                    if (list) {
+                        sourceList.push(...list);
+                    }
+                });
             }
 
             // Filter by Date Range validity (ISO Strings)
@@ -65,13 +65,58 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
         };
 
         updateContent();
-        const interval = setInterval(updateContent, 60000); // Check every minute
+        const interval = setInterval(updateContent, 60000);
         return () => clearInterval(interval);
     }, [playlist]);
 
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setNowMs(Date.now());
+        }, 1000);
+        return () => clearInterval(timer);
+    }, []);
+
+    const markMediaTemporarilyFailed = useCallback((item: MediaItem | null, reason: string) => {
+        if (!item?.url) return;
+
+        const retryAt = Date.now() + FAILED_MEDIA_COOLDOWN_MS;
+        console.warn(`Media failure (${reason}) cooldown ${FAILED_MEDIA_COOLDOWN_MS}ms: ${item.url}`);
+        setFailedUntilByUrl(prev => ({
+            ...prev,
+            [item.url]: retryAt,
+        }));
+
+        setTimeout(() => {
+            setFailedUntilByUrl(prev => {
+                const currentRetryAt = prev[item.url];
+                if (!currentRetryAt || currentRetryAt > Date.now()) return prev;
+                const next = { ...prev };
+                delete next[item.url];
+                return next;
+            });
+        }, FAILED_MEDIA_COOLDOWN_MS + 250);
+    }, []);
+
+    const handleMainMediaFailure = useCallback((item: MediaItem | null, reason: string) => {
+        markMediaTemporarilyFailed(item, reason);
+        setMainIndex(prev => prev + 1);
+    }, [markMediaTemporarilyFailed]);
+
+    const handleSideMediaFailure = useCallback((item: MediaItem | null, reason: string) => {
+        markMediaTemporarilyFailed(item, reason);
+        setSideIndex(prev => prev + 1);
+    }, [markMediaTemporarilyFailed]);
+
+    const playableItems = useMemo(() => {
+        return allValidItems.filter(item => {
+            const retryAt = failedUntilByUrl[item.url];
+            return !retryAt || retryAt <= nowMs;
+        });
+    }, [allValidItems, failedUntilByUrl, nowMs]);
+
     // Separate content types for specific layout roles
-    const videoItems = useMemo(() => allValidItems.filter(i => isVideo(i.fileType)), [allValidItems]);
-    const imageItems = useMemo(() => allValidItems.filter(i => !isVideo(i.fileType)), [allValidItems]);
+    const videoItems = useMemo(() => playableItems.filter(i => isVideo(i.fileType)), [playableItems]);
+    const imageItems = useMemo(() => playableItems.filter(i => !isVideo(i.fileType)), [playableItems]);
 
     // Layout flags
     const hasVideos = videoItems.length > 0;
@@ -128,11 +173,12 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
             if (isActive) {
                 // Return to play if we became active
                 const playPromise = videoRef.current.play();
-                videoRef.current.disablePictureInPicture = true; 
+                videoRef.current.disablePictureInPicture = true;
                 if (playPromise !== undefined) {
                     playPromise.catch(error => {
                         if (error.name !== 'AbortError') {
                             console.error("Resume/Play error:", error);
+                            handleMainMediaFailure(activeVideo, error?.name || 'play-error');
                         }
                     });
                 }
@@ -141,7 +187,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                 videoRef.current.pause();
             }
         }
-    }, [isActive, activeVideo]); // Check on active state change or video change
+    }, [isActive, activeVideo, handleMainMediaFailure]); // Check on active state change or video change
 
     // Handler for Video End/Error to Ensure Rotation
     const handleNextMain = () => {
@@ -167,6 +213,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                             muted
                             loop
                             playsInline
+                            onError={() => console.warn(`Placeholder video failed: ${playlist.place_holder?.url}`)}
                         />
                     ) : (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -198,7 +245,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                     loop={false}
                     playsInline
                     onEnded={handleNextMain}
-                    onError={handleNextMain}
+                    onError={() => handleMainMediaFailure(activeVideo, 'video-element')}
                 />
                 <InfoOverlay />
             </div>
@@ -226,7 +273,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                         loop={false}
                         playsInline
                         onEnded={handleNextMain}
-                        onError={handleNextMain}
+                        onError={() => handleMainMediaFailure(activeVideo, 'video-element')}
                     />
                 ) : (
                     <div className="relative w-full h-full bg-black">
@@ -235,6 +282,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                             src={mainContentUrl}
                             alt="Main Content"
                             className="object-cover w-full h-full"
+                            onError={() => handleMainMediaFailure(activeMainImage, 'image-element')}
                         />
                     </div>
                 )}
@@ -250,6 +298,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                             src={rightTopImage.url}
                             alt="Next 1"
                             className="object-cover w-full h-full"
+                            onError={() => handleSideMediaFailure(rightTopImage, 'side-image-top')}
                         />
                     )}
                 </div>
@@ -262,6 +311,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                             src={rightBottomImage.url}
                             alt="Next 2"
                             className="object-cover w-full h-full"
+                            onError={() => handleSideMediaFailure(rightBottomImage, 'side-image-bottom')}
                         />
                     )}
                 </div>
