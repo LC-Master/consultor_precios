@@ -1,4 +1,5 @@
 'use client';
+import ms from "ms";
 import { useEffect } from "react";
 
 interface ErrorViewProps {
@@ -12,7 +13,7 @@ export default function ErrorView({ message, onClose, inputRef }: ErrorViewProps
         const timer = setTimeout(() => {
             onClose();
             inputRef?.current?.focus();
-        }, 3000); 
+        }, ms('5s')); 
         return () => clearTimeout(timer);
     }, [onClose, inputRef]);
 
