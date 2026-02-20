@@ -76,7 +76,6 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
         if (!item?.url) return;
 
         const retryAt = Date.now() + FAILED_MEDIA_COOLDOWN_MS;
-        console.warn(`Media failure (${reason}) cooldown ${FAILED_MEDIA_COOLDOWN_MS}ms: ${item.url}`);
         setFailedUntilByUrl(prev => ({
             ...prev,
             [item.url]: retryAt,
@@ -173,7 +172,6 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                 if (playPromise !== undefined) {
                     playPromise.catch(error => {
                         if (error.name !== 'AbortError') {
-                            console.error("Resume/Play error:", error);
                             handleMainMediaFailure(activeVideo, error?.name || 'play-error');
                         }
                     });
@@ -209,7 +207,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                             muted
                             loop
                             playsInline
-                            onError={() => console.warn(`Placeholder video failed: ${playlist.place_holder?.url}`)}
+                            onError={() => undefined}
                         />
                     ) : (
                         // eslint-disable-next-line @next/next/no-img-element

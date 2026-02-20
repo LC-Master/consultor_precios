@@ -13,7 +13,6 @@ export function useAuthenticatedFetch() {
             });
 
             if (!resp.ok) {
-                console.error(`Fetch Error: ${resp.status} ${resp.statusText}`);
                 throw new Error(`Error en la petición: ${resp.status} ${resp.statusText}`);
             }
 
@@ -26,7 +25,6 @@ export function useAuthenticatedFetch() {
             return true as unknown as T;
 
         } catch (error) {
-            console.error("Error fetching data:", error);
             throw error;
         }
     }, []);

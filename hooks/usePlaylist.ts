@@ -18,7 +18,6 @@ export function usePlaylist() {
             if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
             if (eventSourceRef.current) eventSourceRef.current.close();
 
-            console.log("Conectando al SSE...");
             const event = new EventSource(eventUrl, {
                 withCredentials: true
             });
@@ -75,7 +74,6 @@ export function usePlaylist() {
                                         resolve();
                                     };
                                     video.onerror = () => {
-                                        console.warn(`Failed to preload video: ${url}`);
                                         resolve();
                                     };
                                     video.src = url;
@@ -84,7 +82,6 @@ export function usePlaylist() {
                                     const img = new Image();
                                     img.onload = () => resolve();
                                     img.onerror = () => {
-                                        console.warn(`Failed to preload image: ${url}`);
                                         resolve();
                                     };
                                     img.src = url;
@@ -111,35 +108,28 @@ export function usePlaylist() {
 
                         setPlaylist(prev => {
                             if (deepEqual(prev, transformedPlaylist)) return prev;
-                            console.log("Playlist actualizada/recuperada:", transformedPlaylist);
                             return transformedPlaylist;
                         });
                     }
-                } catch (err) {
-                    console.error("Error updating playlist:", err);
+                } catch {
+                    return;
                 }
             };
 
-            const handlePlaylistUpdate = async (e: MessageEvent) => {
-                const data = JSON.parse(e.data);
-                console.log("Event Received:", data);
+            const handlePlaylistUpdate = async () => {
                 await fetchPlaylist();
             };
 
-            event.addEventListener("ping", (e) => console.log(e));
+            event.addEventListener("ping", () => undefined);
             event.addEventListener("dto:updated", handlePlaylistUpdate);
             event.addEventListener("playlist:generated", handlePlaylistUpdate);
             event.addEventListener("open", () => {
-                console.log("Conexión SSE Establecida");
                 void fetchPlaylist();
             });
 
             event.onerror = async () => {
-                console.error("Error en conexión SSE (Closed/Error).");
                 event.close();
-                console.log("Intentando reconectar en 1 minuto...");
                 retryTimeoutRef.current = setTimeout(() => {
-                    console.log("Ejecutando reintento de conexión...");
                     initializeEventSource();
                 }, 60000);
             };
@@ -148,11 +138,8 @@ export function usePlaylist() {
         const bootstrap = async () => {
             try {
                 await fetchWithAuth(authUrl, { credentials: "include" });
-                console.log("Autenticación exitosa");
                 initializeEventSource();
-            } catch (error) {
-                console.error("Error al obtener el token de autenticación:", error);
-                console.error("No se pudo obtener token, reintentando bootstrap en 60s");
+            } catch {
                 retryTimeoutRef.current = setTimeout(bootstrap, 60000);
             }
         };
@@ -161,7 +148,6 @@ export function usePlaylist() {
 
         return () => {
             if (eventSourceRef.current) {
-                console.log("Limpiando conexión SSE");
                 eventSourceRef.current.close();
             }
             if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);

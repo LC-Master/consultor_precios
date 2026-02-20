@@ -53,8 +53,7 @@ export function useProductSearch() {
       const data = await getProduct<Product>(searchCode);
       setProduct(data);
       scheduleHide();
-    } catch (err: unknown) {
-      console.error(err);
+    } catch {
       setError("No pudimos encontrar información para este código. Por favor verifique e intente nuevamente.");
       scheduleHide();
     } finally {
