@@ -44,7 +44,7 @@ describe("ProductView", () => {
 
         render(<ProductView product={product} inputRef={createRef()} />);
 
-        expect(screen.getByText("Regular")).toBeDefined();
+        expect(screen.queryByText("Regular")).toBeNull();
         expect(screen.queryByText("PRECIO REF PROM")).toBeNull();
         expect(screen.getAllByText("1,60 Bs").length).toBeGreaterThan(0);
         expect(screen.getAllByText("3,50 $").length).toBeGreaterThan(0);

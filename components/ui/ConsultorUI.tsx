@@ -58,7 +58,7 @@ export default function ConsultorUI() {
       )}
 
       {error && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center">
+        <div className="absolute inset-0 z-30 flex items-center justify-center">
           <ErrorView message={error} onClose={() => setError(null)} inputRef={inputRef} />
         </div>
       )}

@@ -10,6 +10,7 @@ export default function ProductView({ product, inputRef }: { product: Product, i
     if (!product) return null;
 
     const hasPromotion = !!product.promotion;
+    const promotionLabel = product.promotion?.name?.trim() || "Descuento Especial";
     // According to types provided:
     // Prices struct has: base, tax, priceWithTax, referencePrice
     // Promotion struct has: name, basePrice, priceWithTax, referencePrice, discountPercentage, savings
@@ -45,9 +46,17 @@ export default function ProductView({ product, inputRef }: { product: Product, i
 
             <div className="w-full md:w-7/12 p-5 flex flex-col overflow-y-auto">
                 <div className="mb-4 relative">
-                    <span className="inline-block px-2 py-0.5 bg-locatel-medio/10 text-locatel-medio text-[9px] font-bold uppercase tracking-widest rounded-full mb-2">
-                        {product.isBlocked ? "Bloqueado" : (product.promotion?.name || "Regular")}
-                    </span>
+                    {(product.isBlocked || hasPromotion) && (
+                        <span
+                            className={`inline-flex items-center gap-1.5 px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full mb-2 border ${hasPromotion
+                                ? "bg-locatel-medio text-white border-locatel-medio shadow-md"
+                                : "bg-slate-800 text-white border-slate-800"
+                                }`}
+                        >
+                            {hasPromotion && <span className="material-icons text-[12px] leading-none">local_offer</span>}
+                            {product.isBlocked ? "Bloqueado" : promotionLabel}
+                        </span>
+                    )}
                     <h2 className="text-xl md:text-xl font-extrabold text-slate-800 leading-tight wrap-break-words hyphens-auto">
                         {product.description || "Artículo"}
                     </h2>
@@ -58,7 +67,7 @@ export default function ProductView({ product, inputRef }: { product: Product, i
 
                 <div className="flex gap-3 mb-4 relative">
                     {hasPromotion && (
-                        <div className="absolute -top-2 -right-1 z-20 bg-locatel-oro text-white w-12 h-12 rounded-full flex flex-col items-center justify-center shadow-lg transform rotate-12 border-2 border-white">
+                        <div className="absolute -top-2 -right-1 z-20 bg-locatel-oro text-white w-14 h-14 rounded-full flex flex-col items-center justify-center shadow-lg transform rotate-12 border-2 border-white">
                             <span className="text-[10px] font-bold leading-none">-{product.promotion?.discountPercentage}%</span>
                         </div>
                     )}
@@ -109,21 +118,16 @@ export default function ProductView({ product, inputRef }: { product: Product, i
                 )}
 
                 <div className={`grid gap-2 ${hasPromotion ? "grid-cols-4" : "grid-cols-3"}`}>
-                    <div className="p-2 bg-slate-50 rounded-lg border border-slate-100">
-                        <span className="block text-[7px] font-black text-slate-400 uppercase tracking-tighter mb-0.5">Precio Base</span>
-                        <span className="text-[10px] font-bold text-slate-700 leading-none truncate block">
-                            {formatMoney(product.prices.base, "Bs")}
-                        </span>
-                    </div>
+                    {!hasPromotion && (
+                        <div className="p-2 bg-slate-50 rounded-lg border border-slate-100">
+                            <span className="block text-[7px] font-black text-slate-400 uppercase tracking-tighter mb-0.5">Precio Base</span>
+                            <span className="text-[10px] font-bold text-slate-700 leading-none truncate block">
+                                {formatMoney(product.prices.base, "Bs")}
+                            </span>
+                        </div>
+                    )}
 
-                    <div className="p-2 bg-slate-50 rounded-lg border border-slate-200 shadow-sm relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-3 h-3 bg-slate-200 rounded-bl-full"></div>
-                        <span className="block text-[7px] font-black text-slate-500 uppercase tracking-tighter mb-0.5 relative z-10">IVA ({product.prices.tax}%)</span>
-                        <span className="text-[10px] font-bold text-slate-800 leading-none truncate block relative z-10">
-                            {formatMoney(hasPromotion ? product.promotion?.taxAmount : product.prices.taxAmount, "Bs")}
-                        </span>
-                    </div>
-                    
+
                     {hasPromotion && (
                         <div className="p-2 bg-slate-50 rounded-lg border border-slate-100">
                             <span className="block text-[7px] font-black text-slate-400 uppercase tracking-tighter mb-0.5">Precio Base Prom</span>
@@ -132,6 +136,13 @@ export default function ProductView({ product, inputRef }: { product: Product, i
                             </span>
                         </div>
                     )}
+                    <div className="p-2 bg-slate-50 rounded-lg border border-slate-200 shadow-sm relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-3 h-3 bg-slate-200 rounded-bl-full"></div>
+                        <span className="block text-[7px] font-black text-slate-500 uppercase tracking-tighter mb-0.5 relative z-10">IVA ({product.prices.tax}%)</span>
+                        <span className="text-[10px] font-bold text-slate-800 leading-none truncate block relative z-10">
+                            {formatMoney(hasPromotion ? product.promotion?.taxAmount : product.prices.taxAmount, "Bs")}
+                        </span>
+                    </div>
 
                     <div className="p-2 bg-slate-50 rounded-lg border border-slate-100">
                         <span className="block text-[7px] font-black text-slate-400 uppercase tracking-tighter mb-0.5">Precio Ref</span>
