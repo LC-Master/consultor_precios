@@ -2,18 +2,24 @@ import { z } from 'zod'
 
 export const productSchema = z.object({
     CodArticulo: z
-        .coerce
-        .number({ error: "Invalid CodArticulo" })
-        .int({ error: "CodArticulo must be an integer" })
-        .nonnegative({ error: "CodArticulo must be non-negative" })
-        .nonoptional()
+        .union([z.string(), z.number()])
+        .transform((val) => Number(val))
+        .pipe(
+            z.number({ error: "Invalid CodArticulo" })
+            .int({ error: "CodArticulo must be an integer" })
+            .nonnegative({ error: "CodArticulo must be non-negative" })
+        )
         .describe("Article code of the product"),
     CodBarra: z
-        .coerce
-        .number({ error: "Invalid CodBarra" })
-        .int({ error: "CodBarra must be an integer" })
-        .nonnegative({ error: "CodBarra must be non-negative" })
-        .nonoptional()
+        .union([z.string(), z.number()])
+        .transform((val) => {
+            if (typeof val === 'string') return Number(val.trim());
+            return val;
+        })
+        .pipe(
+            z.number({ error: "Invalid CodBarra" })
+            .nonnegative({ error: "CodBarra must be non-negative" })
+        )
         .describe("Barcode of the product"),
     Bloqueado: z
         .boolean({ error: "Invalid Bloqueado" })
@@ -26,11 +32,17 @@ export const productSchema = z.object({
         .number({ error: "Invalid PrecioBase" })
         .nonnegative({ error: "PrecioBase must be non-negative" })
         .describe("Base price of the product"),
-    Iva: z
-        .number({ error: "Invalid Iva" })
-        .nonnegative({ error: "Iva must be non-negative" })
+    PctIva: z
+        .number({ error: "Invalid PctIva" })
+        .nonnegative({ error: "PctIva must be non-negative" })
         .nonoptional()
-        .describe("Tax applied to the product"),
+        .describe("Tax percentage applied to the product"),
+    MontoIva: z
+        .number({ error: "Invalid MontoIva" })
+        .nonnegative({ error: "MontoIva must be non-negative" })
+        .optional()
+        .nullable()
+        .describe("Tax amount applied to the product"),
     PrecioIva: z
         .number({ error: "Invalid PrecioIva" })
         .nonnegative({ error: "PrecioIva must be non-negative" })
@@ -59,6 +71,12 @@ export const productSchema = z.object({
         .nullable()
         .optional()
         .describe("Base price of the promotion"),
+    MontoIvaProm: z
+        .number({ error: "Invalid MontoIvaProm" })
+        .nonnegative({ error: "MontoIvaProm must be non-negative" })
+        .nullable()
+        .optional()
+        .describe("Tax amount for promotion"),
     PrecioIVAProm: z
         .number({ error: "Invalid PrecioIVAProm" })
         .nonnegative({ error: "PrecioIVAProm must be non-negative" })

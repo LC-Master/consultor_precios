@@ -20,13 +20,15 @@ export const normalizeProduct = (product: IProduct): Product => {
         description: product.Descripcion,
         prices: {
             base: product.PrecioBase,
-            tax: product.Iva,
+            tax: product.PctIva,
+            taxAmount: product.MontoIva,
             priceWithTax: product.PrecioIva,
             referencePrice: product.PrecioRef,
         },
         promotion: hasPromotion ? {
             name: product.NomProm,
             basePrice: product.PrecioBaseProm,
+            taxAmount: product.MontoIvaProm,
             priceWithTax: product.PrecioIVAProm,
             referencePrice: product.PrecioRefProm,
             savings: (product.PrecioIva ?? 0) - (product.PrecioIVAProm ?? 0),

@@ -1,8 +1,10 @@
 
+import { withSerwist } from "@serwist/turbopack";
 import type { NextConfig } from "next";
 
 
 const nextConfig: NextConfig = {
+    serverExternalPackages: ['pino', 'pino-pretty'],
     images: {
         remotePatterns: [
             {
@@ -16,4 +18,4 @@ const nextConfig: NextConfig = {
 };
 
 
-export default nextConfig;
+export default withSerwist(nextConfig);

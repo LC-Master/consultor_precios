@@ -1,3 +1,5 @@
+import { StringValue } from "ms";
+
 declare module "bun" {
   interface Env {
     URL_CONSULTA_PRECIO: string;
@@ -12,5 +14,6 @@ declare module "bun" {
     DB_HOST: string;
     DB_PORT: StringValue;
     AUTHORIZED_IPS: string;
+    NEXT_PUBLIC_FAILED_MEDIA_COOLDOWN_S: StringValue;
   }
 }

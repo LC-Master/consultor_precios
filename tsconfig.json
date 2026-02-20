@@ -1,7 +1,14 @@
 {
   "compilerOptions": {
     "target": "ES2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext",
+    ],
+    "types": [
+      "@serwist/next/typings"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -19,7 +26,9 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": [
+        "./*"
+      ]
     }
   },
   "include": [
@@ -30,5 +39,10 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "app/sw.ts",
+    "node_modules",
+    "public/sw*",
+    "public/swe-worker*"
+  ]
 }

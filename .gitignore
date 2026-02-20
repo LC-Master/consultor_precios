@@ -24,6 +24,9 @@
 .DS_Store
 *.pem
 
+#logs
+/logs
+
 # debug
 npm-debug.log*
 yarn-debug.log*
@@ -39,6 +42,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+#service worker to avoid caching issues during development
+public/sw*
+public/swe-worker*
 
 /app/generated/prisma
 

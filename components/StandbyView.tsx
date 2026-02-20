@@ -1,20 +1,17 @@
 'use client';
 
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
+import { parseISO } from 'date-fns';
 import InfoOverlay from './modals/InfoOverlay';
 import { StandbyViewProps, MediaItem } from '@/types/index.type';
-
-// Shared interfaces (matching ConsultorUI)
-
-
-const isVideo = (fileType: string) => {
-    return ['mp4'].includes(fileType.toLowerCase());
-};
-
-
+import ms from 'ms';
+import { isVideo } from '@/lib/isVideo';
 
 export default function StandbyView({ playlist, isActive = true }: StandbyViewProps) {
+    const FAILED_MEDIA_COOLDOWN_MS = ms(process.env.NEXT_PUBLIC_FAILED_MEDIA_COOLDOWN_S || '5s');
     const [allValidItems, setAllValidItems] = useState<MediaItem[]>([]);
+    const [failedUntilByUrl, setFailedUntilByUrl] = useState<Record<string, number>>({});
+    const [nowMs, setNowMs] = useState(() => Date.now());
     const videoRef = useRef<HTMLVideoElement>(null);
 
     // Independent indices for fluid decoupling
@@ -28,13 +25,22 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
             const hour = now.getHours();
             const isAm = hour < 12;
 
-            const sourceList = isAm ? playlist.am : playlist.pm;
+            // Collect all items from all campaigns for the current time slot
+            const sourceList: MediaItem[] = [];
+            if (playlist.campaigns) {
+                playlist.campaigns.forEach(campaign => {
+                    const list = isAm ? campaign.am : campaign.pm;
+                    if (list) {
+                        sourceList.push(...list);
+                    }
+                });
+            }
 
             // Filter by Date Range validity (ISO Strings)
             const validItems = sourceList.filter(item => {
                 if (item.start_at && item.end_at) {
-                    const start = new Date(item.start_at);
-                    const end = new Date(item.end_at);
+                    const start = parseISO(item.start_at);
+                    const end = parseISO(item.end_at);
                     return now >= start && now <= end;
                 }
                 return true;
@@ -45,7 +51,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                 if (prev.length !== validItems.length) return validItems;
                 let changed = false;
                 for (let i = 0; i < prev.length; i++) {
-                    if (prev[i].id !== validItems[i].id) {
+                    if (prev[i].id !== validItems[i].id || prev[i].fileType !== validItems[i].fileType || prev[i].url !== validItems[i].url) {
                         changed = true;
                         break;
                     }
@@ -55,13 +61,58 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
         };
 
         updateContent();
-        const interval = setInterval(updateContent, 60000); // Check every minute
+        const interval = setInterval(updateContent, ms('60s'));
         return () => clearInterval(interval);
     }, [playlist]);
 
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setNowMs(Date.now());
+        }, ms('1s'));
+        return () => clearInterval(timer);
+    }, []);
+
+    const markMediaTemporarilyFailed = useCallback((item: MediaItem | null, reason: string) => {
+        if (!item?.url) return;
+
+        const retryAt = Date.now() + FAILED_MEDIA_COOLDOWN_MS;
+        console.warn(`Media failure (${reason}) cooldown ${FAILED_MEDIA_COOLDOWN_MS}ms: ${item.url}`);
+        setFailedUntilByUrl(prev => ({
+            ...prev,
+            [item.url]: retryAt,
+        }));
+
+        setTimeout(() => {
+            setFailedUntilByUrl(prev => {
+                const currentRetryAt = prev[item.url];
+                if (!currentRetryAt || currentRetryAt > Date.now()) return prev;
+                const next = { ...prev };
+                delete next[item.url];
+                return next;
+            });
+        }, FAILED_MEDIA_COOLDOWN_MS + 250);
+    }, [FAILED_MEDIA_COOLDOWN_MS]);
+
+    const handleMainMediaFailure = useCallback((item: MediaItem | null, reason: string) => {
+        markMediaTemporarilyFailed(item, reason);
+        setMainIndex(prev => prev + 1);
+    }, [markMediaTemporarilyFailed]);
+
+    const handleSideMediaFailure = useCallback((item: MediaItem | null, reason: string) => {
+        markMediaTemporarilyFailed(item, reason);
+        setSideIndex(prev => prev + 1);
+    }, [markMediaTemporarilyFailed]);
+
+    const playableItems = useMemo(() => {
+        return allValidItems.filter(item => {
+            const retryAt = failedUntilByUrl[item.url];
+            return !retryAt || retryAt <= nowMs;
+        });
+    }, [allValidItems, failedUntilByUrl, nowMs]);
+
     // Separate content types for specific layout roles
-    const videoItems = useMemo(() => allValidItems.filter(i => isVideo(i.fileType)), [allValidItems]);
-    const imageItems = useMemo(() => allValidItems.filter(i => !isVideo(i.fileType)), [allValidItems]);
+    const videoItems = useMemo(() => playableItems.filter(i => isVideo(i.fileType)), [playableItems]);
+    const imageItems = useMemo(() => playableItems.filter(i => !isVideo(i.fileType)), [playableItems]);
 
     // Layout flags
     const hasVideos = videoItems.length > 0;
@@ -106,8 +157,8 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
 
         // Rotate side images every 8 seconds, completely independent of the video
         const sideTimer = setInterval(() => {
-            setSideIndex(prev => prev + 1);
-        }, 8000);
+            setSideIndex(prev => prev + 2);
+        }, ms('8s'));
 
         return () => clearInterval(sideTimer);
     }, [hasImages, isActive]);
@@ -117,13 +168,22 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
         if (videoRef.current) {
             if (isActive) {
                 // Return to play if we became active
-                videoRef.current.play().catch(e => console.error("Resume/Play error:", e));
+                const playPromise = videoRef.current.play();
+                videoRef.current.disablePictureInPicture = true;
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        if (error.name !== 'AbortError') {
+                            console.error("Resume/Play error:", error);
+                            handleMainMediaFailure(activeVideo, error?.name || 'play-error');
+                        }
+                    });
+                }
             } else {
                 // Pause if we became inactive
                 videoRef.current.pause();
             }
         }
-    }, [isActive, activeVideo]); // Check on active state change or video change
+    }, [isActive, activeVideo, handleMainMediaFailure]); // Check on active state change or video change
 
     // Handler for Video End/Error to Ensure Rotation
     const handleNextMain = () => {
@@ -149,6 +209,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                             muted
                             loop
                             playsInline
+                            onError={() => console.warn(`Placeholder video failed: ${playlist.place_holder?.url}`)}
                         />
                     ) : (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -176,12 +237,11 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                     ref={videoRef}
                     src={activeVideo!.url}
                     className="w-full h-full object-cover"
-                    autoPlay
                     muted
                     loop={false}
                     playsInline
                     onEnded={handleNextMain}
-                    onError={handleNextMain}
+                    onError={() => handleMainMediaFailure(activeVideo, 'video-element')}
                 />
                 <InfoOverlay />
             </div>
@@ -205,12 +265,11 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                         ref={videoRef}
                         src={mainContentUrl}
                         className="w-full h-full object-cover"
-                        autoPlay
                         muted
                         loop={false}
                         playsInline
                         onEnded={handleNextMain}
-                        onError={handleNextMain}
+                        onError={() => handleMainMediaFailure(activeVideo, 'video-element')}
                     />
                 ) : (
                     <div className="relative w-full h-full bg-black">
@@ -219,6 +278,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                             src={mainContentUrl}
                             alt="Main Content"
                             className="object-cover w-full h-full"
+                            onError={() => handleMainMediaFailure(activeMainImage, 'image-element')}
                         />
                     </div>
                 )}
@@ -234,6 +294,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                             src={rightTopImage.url}
                             alt="Next 1"
                             className="object-cover w-full h-full"
+                            onError={() => handleSideMediaFailure(rightTopImage, 'side-image-top')}
                         />
                     )}
                 </div>
@@ -246,6 +307,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                             src={rightBottomImage.url}
                             alt="Next 2"
                             className="object-cover w-full h-full"
+                            onError={() => handleSideMediaFailure(rightBottomImage, 'side-image-bottom')}
                         />
                     )}
                 </div>
