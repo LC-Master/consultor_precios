@@ -81,7 +81,7 @@ export default function ProductView({ product, inputRef }: { product: Product, i
                                 </span>
                             )}
                             <div className="text-locatel-medio font-extrabold text-xl md:text-2xl">
-                                {formatMoney(priceBs, "Bs")} <span className="text-xs ml-0.5">Bs</span>
+                                {formatMoney(priceBs, "Bs")}
                             </div>
                         </div>
                         <div className="flex flex-col items-center mt-0.5">
@@ -101,7 +101,7 @@ export default function ProductView({ product, inputRef }: { product: Product, i
                                 </span>
                             )}
                             <div className="font-extrabold text-xl md:text-2xl">
-                                {formatMoney(priceRef, "$")} <span className="text-xs ml-0.5">$</span>
+                                {formatMoney(priceRef, "$")}
                             </div>
                         </div>
                         {hasPromotion && (
