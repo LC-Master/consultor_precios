@@ -31,7 +31,7 @@ export default function ProductView({ product, inputRef }: { product: Product, i
                 inputRef?.current?.focus();
             }}
         >
-            <div className="w-full md:w-5/12 bg-slate-50 relative flex items-center justify-center min-h-[22rem] md:min-h-0">
+            <div className="w-full md:w-5/12 bg-slate-50 relative flex items-center justify-center min-h-88 md:min-h-0">
                 <div className="absolute inset-0 bg-locatel-medio/5"></div>
                 <div className="relative w-full h-full p-6 flex items-center justify-center">
                     <Image

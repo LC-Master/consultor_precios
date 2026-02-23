@@ -6,4 +6,5 @@ export const codeSchema = z.coerce
     .nonnegative({ error: "Invalid code" })
     .min(1, "Invalid code")
     .transform((val) => val.toString())
+    .pipe(z.string().max(13, "Invalid code"))
     .describe("Bar code of the product");
