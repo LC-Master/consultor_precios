@@ -25,13 +25,13 @@ export default function ProductView({ product, inputRef }: { product: Product, i
 
     return (
         <div
-            className="w-full max-w-4xl bg-white rounded-2xl shadow-2xl shadow-slate-200 overflow-hidden flex flex-col md:flex-row max-h-[80vh] border border-slate-100"
+            className="w-full max-w-[95vw] md:max-w-5xl bg-white rounded-2xl shadow-2xl shadow-slate-200 overflow-hidden flex flex-col md:flex-row max-h-[88vh] border border-slate-100"
             onClick={(e) => {
                 e.stopPropagation();
                 inputRef?.current?.focus();
             }}
         >
-            <div className="w-full md:w-5/12 bg-slate-50 relative flex items-center justify-center min-h-62.5 md:min-h-0">
+            <div className="w-full md:w-5/12 bg-slate-50 relative flex items-center justify-center min-h-[22rem] md:min-h-0">
                 <div className="absolute inset-0 bg-locatel-medio/5"></div>
                 <div className="relative w-full h-full p-6 flex items-center justify-center">
                     <Image
@@ -44,7 +44,7 @@ export default function ProductView({ product, inputRef }: { product: Product, i
                 </div>
             </div>
 
-            <div className="w-full md:w-7/12 p-5 flex flex-col overflow-y-auto">
+            <div className="w-full md:w-7/12 p-6 sm:p-8 md:p-5 flex flex-col overflow-y-auto">
                 <div className="mb-4 relative">
                     {(product.isBlocked || hasPromotion) && (
                         <span
@@ -57,7 +57,7 @@ export default function ProductView({ product, inputRef }: { product: Product, i
                             {product.isBlocked ? "Bloqueado" : promotionLabel}
                         </span>
                     )}
-                    <h2 className="text-xl md:text-xl font-extrabold text-slate-800 leading-tight wrap-break-words hyphens-auto">
+                    <h2 className="text-2xl md:text-2xl font-extrabold text-slate-800 leading-tight wrap-break-words hyphens-auto">
                         {product.description || "Artículo"}
                     </h2>
                     <div className="text-slate-400 font-medium mt-0.5 text-xs">
@@ -80,7 +80,7 @@ export default function ProductView({ product, inputRef }: { product: Product, i
                                     {formatMoney(oldPriceBs, "Bs")}
                                 </span>
                             )}
-                            <div className="text-locatel-medio font-extrabold text-xl md:text-2xl">
+                            <div className="text-locatel-medio font-extrabold text-2xl md:text-3xl">
                                 {formatMoney(priceBs, "Bs")}
                             </div>
                         </div>
@@ -100,7 +100,7 @@ export default function ProductView({ product, inputRef }: { product: Product, i
                                     {formatMoney(oldPriceRef, "$")}
                                 </span>
                             )}
-                            <div className="font-extrabold text-xl md:text-2xl">
+                            <div className="font-extrabold text-2xl md:text-3xl">
                                 {formatMoney(priceRef, "$")}
                             </div>
                         </div>
