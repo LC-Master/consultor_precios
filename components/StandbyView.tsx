@@ -206,6 +206,8 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                             autoPlay
                             muted
                             loop
+                            disablePictureInPicture
+                            disableRemotePlayback
                             playsInline
                             onError={() => undefined}
                         />
@@ -236,6 +238,8 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                     src={activeVideo!.url}
                     className="w-full h-full object-cover"
                     muted
+                    disablePictureInPicture
+                    disableRemotePlayback
                     loop={false}
                     playsInline
                     onEnded={handleNextMain}
@@ -264,6 +268,8 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                         src={mainContentUrl}
                         className="w-full h-full object-cover"
                         muted
+                        disablePictureInPicture
+                        disableRemotePlayback
                         loop={false}
                         playsInline
                         onEnded={handleNextMain}
