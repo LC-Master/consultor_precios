@@ -17,12 +17,6 @@ export const envSchema = z.object(
       .nonempty("NEXT_PUBLIC_API_KEY no puede estar vacío")
       .nonoptional({ error: "NEXT_PUBLIC_API_KEY es obligatorio" })
       .describe("Clave API para autenticación con la API"),
-    URL_CONSULTA_PRECIO: z
-      .url({ error: "URL_CONSULTA_PRECIO debe ser una URL válida" })
-      .min(1, "URL_CONSULTA_PRECIO no puede estar vacío")
-      .nonempty("URL_CONSULTA_PRECIO no puede estar vacío")
-      .nonoptional({ error: "URL_CONSULTA_PRECIO es obligatorio" })
-      .describe("URL del servicio de consulta de precios"),
     NEXT_PUBLIC_TIMEOUT_SECONDS: z.coerce
       .number({
         error: "NEXT_PUBLIC_TIMEOUT_SECONDS debe ser un número",
