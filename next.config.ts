@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
     output: "standalone",
     serverExternalPackages: ['pino', 'pino-pretty'],
     images: {
+        unoptimized: true,
         remotePatterns: [
             {
                 protocol: 'http',
