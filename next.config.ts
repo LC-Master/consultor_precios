@@ -5,7 +5,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
     output: "standalone",
-    serverExternalPackages: ['pino', 'pino-pretty', 'pino-abstract-transport'],
+    serverExternalPackages: ['pino', 'pino-pretty', 'pino-abstract-transport', 'thread-stream'],
     images: {
         unoptimized: true,
         remotePatterns: [
