@@ -11,7 +11,9 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
     const FAILED_MEDIA_COOLDOWN_MS = ms(process.env.NEXT_PUBLIC_FAILED_MEDIA_COOLDOWN_S || '5s');
     const [allValidItems, setAllValidItems] = useState<MediaItem[]>([]);
     const [failedUntilByUrl, setFailedUntilByUrl] = useState<Record<string, number>>({});
+    const failedUntilByUrlRef = useRef<Record<string, number>>({});
     const [nowMs, setNowMs] = useState(() => Date.now());
+    const [isMainVideoReady, setIsMainVideoReady] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
 
     // Independent indices for fluid decoupling
@@ -72,8 +74,15 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
         return () => clearInterval(timer);
     }, []);
 
+    useEffect(() => {
+        failedUntilByUrlRef.current = failedUntilByUrl;
+    }, [failedUntilByUrl]);
+
     const markMediaTemporarilyFailed = useCallback((item: MediaItem | null, reason: string) => {
         if (!item?.url) return;
+
+        const currentRetryAt = failedUntilByUrlRef.current[item.url];
+        if (currentRetryAt && currentRetryAt > Date.now()) return false;
 
         const retryAt = Date.now() + FAILED_MEDIA_COOLDOWN_MS;
         setFailedUntilByUrl(prev => ({
@@ -90,16 +99,22 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                 return next;
             });
         }, FAILED_MEDIA_COOLDOWN_MS + 250);
+
+        return true;
     }, [FAILED_MEDIA_COOLDOWN_MS]);
 
     const handleMainMediaFailure = useCallback((item: MediaItem | null, reason: string) => {
-        markMediaTemporarilyFailed(item, reason);
-        setMainIndex(prev => prev + 1);
+        const marked = markMediaTemporarilyFailed(item, reason);
+        if (marked) {
+            setMainIndex(prev => prev + 1);
+        }
     }, [markMediaTemporarilyFailed]);
 
     const handleSideMediaFailure = useCallback((item: MediaItem | null, reason: string) => {
-        markMediaTemporarilyFailed(item, reason);
-        setSideIndex(prev => prev + 1);
+        const marked = markMediaTemporarilyFailed(item, reason);
+        if (marked) {
+            setSideIndex(prev => prev + 1);
+        }
     }, [markMediaTemporarilyFailed]);
 
     const playableItems = useMemo(() => {
@@ -116,6 +131,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
     // Layout flags
     const hasVideos = videoItems.length > 0;
     const hasImages = imageItems.length > 0;
+    const isSingleVideo = hasVideos && videoItems.length === 1;
     const isEmpty = !hasVideos && !hasImages;
 
     // Derived Current Items - Main Pane
@@ -125,6 +141,14 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
     // Derived Current Items - Side Pane (Independent rotation)
     const rightTopImage = hasImages ? imageItems[sideIndex % imageItems.length] : null;
     const rightBottomImage = hasImages ? imageItems[(sideIndex + 1) % imageItems.length] : null;
+
+    useEffect(() => {
+        if (!hasVideos || !activeVideo?.url) {
+            setIsMainVideoReady(false);
+            return;
+        }
+        setIsMainVideoReady(false);
+    }, [hasVideos, activeVideo?.url]);
 
     // Timer Logic 1: Main Content Rotation.
     // MODIFIED: Videos drive themselves via onEnded. Images use setTimeout.
@@ -236,13 +260,17 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                 <video
                     ref={videoRef}
                     src={activeVideo!.url}
-                    className="w-full h-full object-cover"
+                    className={`w-full h-full object-cover transition-opacity duration-500 ${isSingleVideo ? (isMainVideoReady ? 'opacity-100' : 'opacity-0') : 'opacity-100'}`}
+                    autoPlay
                     muted
+                    controls={false}
+                    preload="auto"
                     disablePictureInPicture
                     disableRemotePlayback
-                    loop={false}
+                    loop={isSingleVideo}
                     playsInline
-                    onEnded={handleNextMain}
+                    onLoadedData={() => setIsMainVideoReady(true)}
+                    onEnded={isSingleVideo ? undefined : handleNextMain}
                     onError={() => handleMainMediaFailure(activeVideo, 'video-element')}
                 />
                 <InfoOverlay />
@@ -266,13 +294,17 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                     <video
                         ref={videoRef}
                         src={mainContentUrl}
-                        className="w-full h-full object-cover"
+                        className={`w-full h-full object-cover transition-opacity duration-500 ${isSingleVideo ? (isMainVideoReady ? 'opacity-100' : 'opacity-0') : 'opacity-100'}`}
+                        autoPlay
                         muted
+                        controls={false}
+                        preload="auto"
                         disablePictureInPicture
                         disableRemotePlayback
-                        loop={false}
+                        loop={isSingleVideo}
                         playsInline
-                        onEnded={handleNextMain}
+                        onLoadedData={() => setIsMainVideoReady(true)}
+                        onEnded={isSingleVideo ? undefined : handleNextMain}
                         onError={() => handleMainMediaFailure(activeVideo, 'video-element')}
                     />
                 ) : (
