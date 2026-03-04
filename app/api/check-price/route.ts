@@ -5,8 +5,38 @@ import sql from 'mssql';
 import { pool } from "@/src/provider/pool.provider";
 import { normalizeProduct } from "@/lib/normalizeProduct";
 import { logger } from "@/lib/logger";
+import isRateLimited from "@/lib/rateLimit";
+
+const RATE_LIMIT_MAX_REQUESTS = 30;
+const RATE_LIMIT_WINDOW_MS = 60_000;
+
+function getClientIp(request: NextRequest): string {
+    const forwardedFor = request.headers.get("x-forwarded-for");
+    if (forwardedFor) {
+        const firstIp = forwardedFor.split(",")[0]?.trim();
+        if (firstIp) {
+            return firstIp;
+        }
+    }
+
+    return request.headers.get("x-real-ip") ?? "unknown";
+}
 
 export async function GET(request: NextRequest) {
+    const clientIp = getClientIp(request);
+
+    if (isRateLimited(clientIp, RATE_LIMIT_MAX_REQUESTS, RATE_LIMIT_WINDOW_MS)) {
+        return NextResponse.json(
+            { error: "Too many requests. Please try again later." },
+            {
+                status: 429,
+                headers: {
+                    "Retry-After": String(Math.ceil(RATE_LIMIT_WINDOW_MS / 1000)),
+                },
+            },
+        );
+    }
+
     const code = request.nextUrl.searchParams.get("code");
     const parsedCode = codeSchema.safeParse(code);
 

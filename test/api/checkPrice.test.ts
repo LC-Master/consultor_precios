@@ -137,6 +137,39 @@ describe("checkPrice API validations tests", () => {
         expect(response.status).toBe(500);
         expect(data).toEqual({ error: "Internal Server Error" });
     });
+
+    it("should return 429 when IP exceeds request threshold", async () => {
+        spyOn(pool, "request").mockReturnValue({
+            input: () => ({
+                execute: async () => ({
+                    recordset: [
+                        {
+                            'JSON_F52E2B61-18A1-11d1-B105-00805F49916B': '{"CodArticulo":"2103931","CodBarra":"7591440409094                 ","Bloqueado":false,"Descripcion":"ELEMENTAL CREMA CORP TE VER PE","PrecioBase":2236.5100,"PctIva":1.6000000e+001,"MontoIva":3.578400000000000e+002,"PrecioIva":2.594350000000000e+003,"PrecioRef":7.130000000000000e+000,"Tasa":3.636600000000000e+002,"TasaEuro":4.344300000000000e+002}'
+                        }
+                    ],
+                    recordsets: [],
+                    rowsAffected: [],
+                    output: {},
+                    returnValue: 0,
+                })
+            })
+        } as unknown as ReturnType<typeof pool.request>);
+
+        const headers = new Headers({ "x-forwarded-for": "198.51.100.10" });
+        let lastAllowedResponse = null;
+
+        for (let i = 0; i < 30; i += 1) {
+            lastAllowedResponse = await GET(new NextRequest("http://localhost/api/check-price?code=7591440409094", { headers }));
+        }
+
+        const limitedResponse = await GET(new NextRequest("http://localhost/api/check-price?code=7591440409094", { headers }));
+        const limitedData = await limitedResponse.json();
+
+        expect(lastAllowedResponse?.status).toBe(200);
+        expect(limitedResponse.status).toBe(429);
+        expect(limitedData).toEqual({ error: "Too many requests. Please try again later." });
+        expect(limitedResponse.headers.get("Retry-After")).toBe("60");
+    });
     describe("checkPrice API with promotion", () => {
 
         beforeAll(() => {
