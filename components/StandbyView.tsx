@@ -9,9 +9,13 @@ import { isVideo } from '@/lib/isVideo';
 
 export default function StandbyView({ playlist, isActive = true }: StandbyViewProps) {
     const FAILED_MEDIA_COOLDOWN_MS = ms(process.env.NEXT_PUBLIC_FAILED_MEDIA_COOLDOWN_S || '5s');
+    const CLIENT_REFRESH_THROTTLE_MS = ms('30s');
+    const MAX_FAILED_MEDIA_COOLDOWN_MS = ms('5m');
     const [allValidItems, setAllValidItems] = useState<MediaItem[]>([]);
     const [failedUntilByUrl, setFailedUntilByUrl] = useState<Record<string, number>>({});
+    const [failureCountByUrl, setFailureCountByUrl] = useState<Record<string, number>>({});
     const failedUntilByUrlRef = useRef<Record<string, number>>({});
+    const lastRefreshRequestAtRef = useRef(0);
     const [nowMs, setNowMs] = useState(() => Date.now());
     const [isMainVideoReady, setIsMainVideoReady] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -78,17 +82,37 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
         failedUntilByUrlRef.current = failedUntilByUrl;
     }, [failedUntilByUrl]);
 
+    const requestPlaylistRefresh = useCallback(() => {
+        const now = Date.now();
+        if (now - lastRefreshRequestAtRef.current < CLIENT_REFRESH_THROTTLE_MS) return;
+        lastRefreshRequestAtRef.current = now;
+        window.dispatchEvent(new CustomEvent('playlist:client-refresh'));
+    }, [CLIENT_REFRESH_THROTTLE_MS]);
+
     const markMediaTemporarilyFailed = useCallback((item: MediaItem | null, reason: string) => {
         if (!item?.url) return;
 
         const currentRetryAt = failedUntilByUrlRef.current[item.url];
         if (currentRetryAt && currentRetryAt > Date.now()) return false;
 
-        const retryAt = Date.now() + FAILED_MEDIA_COOLDOWN_MS;
+        const nextFailures = (failureCountByUrl[item.url] || 0) + 1;
+        const adaptiveCooldownMs = Math.min(
+            FAILED_MEDIA_COOLDOWN_MS * Math.max(1, nextFailures),
+            MAX_FAILED_MEDIA_COOLDOWN_MS
+        );
+        const retryAt = Date.now() + adaptiveCooldownMs;
+
+        setFailureCountByUrl(prev => ({
+            ...prev,
+            [item.url]: nextFailures,
+        }));
+
         setFailedUntilByUrl(prev => ({
             ...prev,
             [item.url]: retryAt,
         }));
+
+        requestPlaylistRefresh();
 
         setTimeout(() => {
             setFailedUntilByUrl(prev => {
@@ -98,23 +122,17 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                 delete next[item.url];
                 return next;
             });
-        }, FAILED_MEDIA_COOLDOWN_MS + 250);
+        }, adaptiveCooldownMs + 250);
 
         return true;
-    }, [FAILED_MEDIA_COOLDOWN_MS]);
+    }, [FAILED_MEDIA_COOLDOWN_MS, MAX_FAILED_MEDIA_COOLDOWN_MS, failureCountByUrl, requestPlaylistRefresh]);
 
     const handleMainMediaFailure = useCallback((item: MediaItem | null, reason: string) => {
-        const marked = markMediaTemporarilyFailed(item, reason);
-        if (marked) {
-            setMainIndex(prev => prev + 1);
-        }
+        markMediaTemporarilyFailed(item, reason);
     }, [markMediaTemporarilyFailed]);
 
     const handleSideMediaFailure = useCallback((item: MediaItem | null, reason: string) => {
-        const marked = markMediaTemporarilyFailed(item, reason);
-        if (marked) {
-            setSideIndex(prev => prev + 1);
-        }
+        markMediaTemporarilyFailed(item, reason);
     }, [markMediaTemporarilyFailed]);
 
     const playableItems = useMemo(() => {
