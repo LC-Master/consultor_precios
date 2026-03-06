@@ -106,6 +106,10 @@ export function usePlaylist() {
                         if (deepEqual(prev, transformedPlaylist)) return prev;
                         return transformedPlaylist;
                     });
+
+                    // Notify standby media layer that playlist fetch succeeded,
+                    // even if payload was equal, so failed media can be retried.
+                    window.dispatchEvent(new CustomEvent('playlist:refresh-success'));
                 }
             } catch {
                 return;

@@ -83,6 +83,19 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
         failedUntilByUrlRef.current = failedUntilByUrl;
     }, [failedUntilByUrl]);
 
+    useEffect(() => {
+        const handlePlaylistRefreshSuccess = () => {
+            failureCountByUrlRef.current = {};
+            setFailedUntilByUrl({});
+            setNowMs(Date.now());
+        };
+
+        window.addEventListener('playlist:refresh-success', handlePlaylistRefreshSuccess);
+        return () => {
+            window.removeEventListener('playlist:refresh-success', handlePlaylistRefreshSuccess);
+        };
+    }, []);
+
     const requestPlaylistRefresh = useCallback(() => {
         const now = Date.now();
         if (now - lastRefreshRequestAtRef.current < CLIENT_REFRESH_THROTTLE_MS) return;
