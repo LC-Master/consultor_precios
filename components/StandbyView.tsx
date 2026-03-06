@@ -9,12 +9,13 @@ import { isVideo } from '@/lib/isVideo';
 
 export default function StandbyView({ playlist, isActive = true }: StandbyViewProps) {
     const FAILED_MEDIA_COOLDOWN_MS = ms(process.env.NEXT_PUBLIC_FAILED_MEDIA_COOLDOWN_S || '5s');
-    const CLIENT_REFRESH_THROTTLE_MS = ms('30s');
-    const MAX_FAILED_MEDIA_COOLDOWN_MS = ms('5m');
+    const CLIENT_REFRESH_THROTTLE_MS = ms('90s');
+    const MIN_FAILED_MEDIA_COOLDOWN_MS = ms('60s');
+    const MAX_FAILED_MEDIA_COOLDOWN_MS = ms('15m');
     const [allValidItems, setAllValidItems] = useState<MediaItem[]>([]);
     const [failedUntilByUrl, setFailedUntilByUrl] = useState<Record<string, number>>({});
-    const [failureCountByUrl, setFailureCountByUrl] = useState<Record<string, number>>({});
     const failedUntilByUrlRef = useRef<Record<string, number>>({});
+    const failureCountByUrlRef = useRef<Record<string, number>>({});
     const lastRefreshRequestAtRef = useRef(0);
     const [nowMs, setNowMs] = useState(() => Date.now());
     const [isMainVideoReady, setIsMainVideoReady] = useState(false);
@@ -95,17 +96,17 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
         const currentRetryAt = failedUntilByUrlRef.current[item.url];
         if (currentRetryAt && currentRetryAt > Date.now()) return false;
 
-        const nextFailures = (failureCountByUrl[item.url] || 0) + 1;
+        const nextFailures = (failureCountByUrlRef.current[item.url] || 0) + 1;
+        failureCountByUrlRef.current[item.url] = nextFailures;
+
         const adaptiveCooldownMs = Math.min(
-            FAILED_MEDIA_COOLDOWN_MS * Math.max(1, nextFailures),
+            Math.max(
+                FAILED_MEDIA_COOLDOWN_MS * Math.max(1, nextFailures),
+                MIN_FAILED_MEDIA_COOLDOWN_MS
+            ),
             MAX_FAILED_MEDIA_COOLDOWN_MS
         );
         const retryAt = Date.now() + adaptiveCooldownMs;
-
-        setFailureCountByUrl(prev => ({
-            ...prev,
-            [item.url]: nextFailures,
-        }));
 
         setFailedUntilByUrl(prev => ({
             ...prev,
@@ -125,7 +126,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
         }, adaptiveCooldownMs + 250);
 
         return true;
-    }, [FAILED_MEDIA_COOLDOWN_MS, MAX_FAILED_MEDIA_COOLDOWN_MS, failureCountByUrl, requestPlaylistRefresh]);
+    }, [FAILED_MEDIA_COOLDOWN_MS, MIN_FAILED_MEDIA_COOLDOWN_MS, MAX_FAILED_MEDIA_COOLDOWN_MS, requestPlaylistRefresh]);
 
     const handleMainMediaFailure = useCallback((item: MediaItem | null, reason: string) => {
         markMediaTemporarilyFailed(item, reason);

@@ -17,7 +17,7 @@ export function usePlaylist() {
 
     useEffect(() => {
         const PLAYLIST_POLL_MS = 5 * 60 * 1000;
-        const CLIENT_REFRESH_THROTTLE_MS = 30 * 1000;
+        const CLIENT_REFRESH_THROTTLE_MS = 90 * 1000;
 
         const fetchPlaylist = async () => {
             try {
