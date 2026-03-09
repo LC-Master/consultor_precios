@@ -295,7 +295,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                 <video
                     ref={videoRef}
                     src={activeVideo!.url}
-                    className={`w-full h-full object-cover transition-opacity duration-500 ${isSingleVideo ? (isMainVideoReady ? 'opacity-100' : 'opacity-0') : 'opacity-100'}`}
+                    className={`h-full w-auto max-w-full object-contain bg-black transition-opacity duration-500 ${isSingleVideo ? (isMainVideoReady ? 'opacity-100' : 'opacity-0') : 'opacity-100'}`}
                     autoPlay
                     muted
                     controls={false}
@@ -322,14 +322,14 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
     // This eliminates flickering (black screens) during transitions.
 
     return (
-        <div className="absolute inset-0 w-full h-full bg-black grid grid-cols-[2fr_1fr] overflow-hidden">
-            {/* Left Main Pane (8 cols) - No borders, full bleed */}
-            <div className="relative h-full bg-black flex items-center justify-center p-0 overflow-hidden min-h-0 min-w-0">
+        <div className="absolute inset-0 w-full h-full bg-black flex overflow-hidden">
+            {/* Left Main Pane: video or main image dictates its own width */}
+            <div className="relative h-full w-auto flex-none bg-black flex items-center justify-center overflow-hidden min-h-0 min-w-0">
                 {isMainContentVideo ? (
                     <video
                         ref={videoRef}
                         src={mainContentUrl}
-                        className={`w-full h-full max-w-full max-h-full object-cover transition-opacity duration-500 ${isSingleVideo ? (isMainVideoReady ? 'opacity-100' : 'opacity-0') : 'opacity-100'}`}
+                        className={`h-full w-auto max-w-full object-contain bg-black transition-opacity duration-500 ${isSingleVideo ? (isMainVideoReady ? 'opacity-100' : 'opacity-0') : 'opacity-100'}`}
                         autoPlay
                         muted
                         controls={false}
@@ -343,41 +343,41 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                         onError={() => handleMainMediaFailure(activeVideo, 'video-element')}
                     />
                 ) : (
-                    <div className="w-full h-full bg-black min-h-0 min-w-0 flex items-center justify-center">
+                    <div className="h-full w-auto max-w-full bg-black min-h-0 min-w-0 flex items-center justify-center">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                             src={mainContentUrl}
                             alt="Main Content"
-                            className="w-full h-full max-w-full max-h-full object-cover"
+                            className="h-full w-auto max-w-full object-contain"
                             onError={() => handleMainMediaFailure(activeMainImage, 'image-element')}
                         />
                     </div>
                 )}
             </div>
 
-            {/* Right Side Pane (4 cols) - Split Top/Bottom - IMAGES ONLY */}
-            <div className="grid grid-rows-2 h-full bg-black min-h-0 min-w-0 overflow-hidden">
+            {/* Right Side Pane: flexible column of two images */}
+            <div className="flex-1 flex flex-col min-w-0 h-full bg-black border-l border-white/10 overflow-hidden">
                 {/* Top Right Block */}
-                <div className="relative border-b border-white/10 p-0 overflow-hidden bg-black min-h-0 min-w-0 flex items-center justify-center">
+                <div className="relative flex-1 overflow-hidden bg-black min-h-0 min-w-0">
                     {rightTopImage && (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                             src={rightTopImage.url}
                             alt="Next 1"
-                            className="w-full h-full max-w-full max-h-full object-cover"
+                            className="absolute inset-0 w-full h-full object-cover"
                             onError={() => handleSideMediaFailure(rightTopImage, 'side-image-top')}
                         />
                     )}
                 </div>
 
                 {/* Bottom Right Block */}
-                <div className="relative p-0 overflow-hidden bg-black min-h-0 min-w-0 flex items-center justify-center">
+                <div className="relative flex-1 overflow-hidden bg-black min-h-0 min-w-0 border-t border-white/10">
                     {rightBottomImage && (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                             src={rightBottomImage.url}
                             alt="Next 2"
-                            className="w-full h-full max-w-full max-h-full object-cover"
+                            className="absolute inset-0 w-full h-full object-cover"
                             onError={() => handleSideMediaFailure(rightBottomImage, 'side-image-bottom')}
                         />
                     )}
