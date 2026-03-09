@@ -160,12 +160,9 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
     const videoItems = useMemo(() => playableItems.filter(i => isVideo(i.fileType)), [playableItems]);
     const imageItems = useMemo(() => playableItems.filter(i => !isVideo(i.fileType)), [playableItems]);
 
-    // Layout flags (mutually exclusive helpers)
+    // Layout flags
     const hasVideos = videoItems.length > 0;
     const hasImages = imageItems.length > 0;
-    const hasOnlyVideos = hasVideos && !hasImages;
-    const hasOnlyImages = !hasVideos && hasImages;
-    const hasMixed = hasVideos && hasImages;
     const isSingleVideo = hasVideos && videoItems.length === 1;
     const isEmpty = !hasVideos && !hasImages;
 
@@ -255,13 +252,13 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
             const isPlaceholderVideo = isVideo(playlist.place_holder.fileType);
 
             return (
-                <div className="absolute inset-0 bg-black min-h-0 min-w-0">
+                <div className="absolute inset-0 bg-black h-full">
                     {/* Fullscreen Server Placeholder (Video or Image) */}
                     {isPlaceholderVideo ? (
                         <video
                             id="placeholder-video"
                             src={playlist.place_holder.url}
-                            className="w-full h-full object-contain bg-black"
+                            className="w-full h-full object-cover"
                             autoPlay
                             muted
                             loop
@@ -275,7 +272,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                         <img
                             src={playlist.place_holder.url}
                             alt="Placeholder"
-                            className="w-full h-full object-contain bg-black"
+                            className="object-cover w-full h-full"
                         />
                     )}
 
@@ -289,13 +286,13 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
     }
 
     // 2. Video Only Mode
-    if (hasOnlyVideos) {
+    if (hasVideos && !hasImages) {
         return (
-            <div className="absolute inset-0 bg-black min-h-0 min-w-0 w-full h-full flex items-center justify-center overflow-hidden">
+            <div className="absolute inset-0 bg-black">
                 <video
                     ref={videoRef}
                     src={activeVideo!.url}
-                    className={`h-full w-auto max-w-full object-contain bg-black transition-opacity duration-500 ${isSingleVideo ? (isMainVideoReady ? 'opacity-100' : 'opacity-0') : 'opacity-100'}`}
+                    className={`w-full h-full object-cover transition-opacity duration-500 ${isSingleVideo ? (isMainVideoReady ? 'opacity-100' : 'opacity-0') : 'opacity-100'}`}
                     autoPlay
                     muted
                     controls={false}
@@ -314,22 +311,22 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
     }
 
     // 3. Mixed / Image Mode
-    const mainContentUrl = hasMixed ? activeVideo!.url : activeMainImage!.url;
-    const isMainContentVideo = hasMixed;
+    const mainContentUrl = hasVideos ? activeVideo!.url : activeMainImage!.url;
+    const isMainContentVideo = hasVideos;
 
     // CRITICAL FIX: Removed 'key' props from video/img elements to encourage reuse.
     // This allows the browser to swap the 'src' attribute instantly without destroying the DOM component.
     // This eliminates flickering (black screens) during transitions.
 
     return (
-        <div className="absolute inset-0 w-full h-full bg-black flex overflow-hidden">
-            {/* Left Main Pane: ancho fijo 75%, fondo corporativo para evitar parpadeo */}
-            <div className="relative h-full w-[75%] bg-[#E87722] flex items-center justify-center overflow-hidden min-h-0 min-w-0">
+        <div className="absolute inset-0 bg-black grid grid-cols-12 h-full">
+            {/* Left Main Pane (8 cols) - No borders, full bleed */}
+            <div className="col-span-8 relative h-full bg-black flex items-center justify-center p-0 overflow-hidden">
                 {isMainContentVideo ? (
                     <video
                         ref={videoRef}
                         src={mainContentUrl}
-                        className={`h-full w-auto max-w-full object-contain transition-opacity duration-500 ${isSingleVideo ? (isMainVideoReady ? 'opacity-100' : 'opacity-0') : 'opacity-100'}`}
+                        className={`w-full h-full object-cover transition-opacity duration-500 ${isSingleVideo ? (isMainVideoReady ? 'opacity-100' : 'opacity-0') : 'opacity-100'}`}
                         autoPlay
                         muted
                         controls={false}
@@ -343,41 +340,41 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                         onError={() => handleMainMediaFailure(activeVideo, 'video-element')}
                     />
                 ) : (
-                    <div className="h-full w-full bg-[#E87722] min-h-0 min-w-0 flex items-center justify-center">
+                    <div className="relative w-full h-full bg-black">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                             src={mainContentUrl}
                             alt="Main Content"
-                            className="h-full w-auto max-w-full object-contain"
+                            className="object-cover w-full h-full"
                             onError={() => handleMainMediaFailure(activeMainImage, 'image-element')}
                         />
                     </div>
                 )}
             </div>
 
-            {/* Right Side Pane: ancho fijo 25%, columna estable */}
-            <div className="w-[25%] h-full flex flex-col min-w-0 bg-black border-l border-white/10 overflow-hidden">
+            {/* Right Side Pane (4 cols) - Split Top/Bottom - IMAGES ONLY */}
+            <div className="col-span-4 grid grid-rows-2 h-full bg-black">
                 {/* Top Right Block */}
-                <div className="relative flex-1 overflow-hidden bg-black min-h-0 min-w-0">
+                <div className="relative border-b border-white/10 p-0 overflow-hidden bg-black">
                     {rightTopImage && (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                             src={rightTopImage.url}
                             alt="Next 1"
-                            className="absolute inset-0 w-full h-full object-cover"
+                            className="object-cover w-full h-full"
                             onError={() => handleSideMediaFailure(rightTopImage, 'side-image-top')}
                         />
                     )}
                 </div>
 
                 {/* Bottom Right Block */}
-                <div className="relative flex-1 overflow-hidden bg-black min-h-0 min-w-0 border-t border-white/10">
+                <div className="relative p-0 overflow-hidden bg-black">
                     {rightBottomImage && (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                             src={rightBottomImage.url}
                             alt="Next 2"
-                            className="absolute inset-0 w-full h-full object-cover"
+                            className="object-cover w-full h-full"
                             onError={() => handleSideMediaFailure(rightBottomImage, 'side-image-bottom')}
                         />
                     )}
