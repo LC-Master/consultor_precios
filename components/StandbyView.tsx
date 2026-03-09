@@ -302,9 +302,9 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
     // This eliminates flickering (black screens) during transitions.
 
     return (
-        <div className="absolute inset-0 bg-black grid grid-cols-12 h-full">
+        <div className="absolute inset-0 bg-black grid grid-cols-12 h-full max-h-screen overflow-hidden">
             {/* Left Main Pane (8 or 12 cols) - No borders, full bleed */}
-            <div className={`${mainColSpan} relative h-full bg-black flex items-center justify-center p-0 overflow-hidden transition-all duration-500`}>
+            <div className={`${mainColSpan} relative h-full bg-black flex items-center justify-center p-0 overflow-hidden transition-all duration-500 max-h-screen`}> 
                 {isMainContentVideo ? (
                     <video
                         ref={videoRef}
@@ -323,12 +323,12 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                         onError={() => handleMainMediaFailure(activeVideo, 'video-element')}
                     />
                 ) : (
-                    <div className="relative w-full h-full bg-black">
+                    <div className="relative w-full h-full bg-black max-h-screen">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                             src={mainContentUrl}
                             alt="Main Content"
-                            className="object-cover w-full h-full"
+                            className="object-cover w-full h-full max-h-full max-w-full"
                             onError={() => handleMainMediaFailure(activeMainImage, 'image-element')}
                         />
                     </div>
@@ -337,7 +337,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
 
             {/* Right Side Pane (4 cols) - Split Top/Bottom - IMAGES ONLY */}
             {showSidePanel && (
-            <div className="col-span-4 grid grid-rows-2 h-full bg-black animate-in fade-in slide-in-from-right-10 duration-700">
+            <div className="col-span-4 grid grid-rows-2 h-full max-h-screen bg-black animate-in fade-in slide-in-from-right-10 duration-700">
                 {/* Top Right Block */}
                 <div className="relative border-b border-white/10 p-0 overflow-hidden bg-black">
                     {rightTopImage && (
@@ -345,7 +345,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                         <img
                             src={rightTopImage.url}
                             alt="Next 1"
-                            className="object-cover w-full h-full"
+                            className="object-cover w-full h-full max-h-full max-w-full"
                             onError={() => handleSideMediaFailure(rightTopImage, 'side-image-top')}
                         />
                     )}
@@ -358,7 +358,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                         <img
                             src={rightBottomImage.url}
                             alt="Next 2"
-                            className="object-cover w-full h-full"
+                            className="object-cover w-full h-full max-h-full max-w-full"
                             onError={() => handleSideMediaFailure(rightBottomImage, 'side-image-bottom')}
                         />
                     )}
