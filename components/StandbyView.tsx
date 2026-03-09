@@ -336,7 +336,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                     ref={ambientVideoRef}
                     src={activeVideo!.url}
                     className="absolute inset-0 w-full h-full object-cover scale-110"
-                    style={{ filter: 'blur(60px) saturate(160%) brightness(140%)' }}
+                    style={{ filter: 'blur(10px) saturate(160%) brightness(140%)' }}
                     autoPlay
                     muted
                     controls={false}
