@@ -160,9 +160,12 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
     const videoItems = useMemo(() => playableItems.filter(i => isVideo(i.fileType)), [playableItems]);
     const imageItems = useMemo(() => playableItems.filter(i => !isVideo(i.fileType)), [playableItems]);
 
-    // Layout flags
+    // Layout flags (mutually exclusive helpers)
     const hasVideos = videoItems.length > 0;
     const hasImages = imageItems.length > 0;
+    const hasOnlyVideos = hasVideos && !hasImages;
+    const hasOnlyImages = !hasVideos && hasImages;
+    const hasMixed = hasVideos && hasImages;
     const isSingleVideo = hasVideos && videoItems.length === 1;
     const isEmpty = !hasVideos && !hasImages;
 
@@ -286,7 +289,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
     }
 
     // 2. Video Only Mode
-    if (hasVideos && !hasImages) {
+    if (hasOnlyVideos) {
         return (
             <div className="absolute inset-0 bg-black min-h-0 min-w-0 w-full h-full flex items-center justify-center overflow-hidden">
                 <video
@@ -311,8 +314,8 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
     }
 
     // 3. Mixed / Image Mode
-    const mainContentUrl = hasVideos ? activeVideo!.url : activeMainImage!.url;
-    const isMainContentVideo = hasVideos;
+    const mainContentUrl = hasMixed ? activeVideo!.url : activeMainImage!.url;
+    const isMainContentVideo = hasMixed;
 
     // CRITICAL FIX: Removed 'key' props from video/img elements to encourage reuse.
     // This allows the browser to swap the 'src' attribute instantly without destroying the DOM component.
