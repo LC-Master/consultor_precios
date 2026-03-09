@@ -323,13 +323,13 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
 
     return (
         <div className="absolute inset-0 w-full h-full bg-black flex overflow-hidden">
-            {/* Left Main Pane: video or main image dictates its own width */}
-            <div className="relative h-full w-auto flex-none bg-black flex items-center justify-center overflow-hidden min-h-0 min-w-0">
+            {/* Left Main Pane: ancho fijo 75%, fondo corporativo para evitar parpadeo */}
+            <div className="relative h-full w-[75%] bg-[#E87722] flex items-center justify-center overflow-hidden min-h-0 min-w-0">
                 {isMainContentVideo ? (
                     <video
                         ref={videoRef}
                         src={mainContentUrl}
-                        className={`h-full w-auto max-w-full object-contain bg-black transition-opacity duration-500 ${isSingleVideo ? (isMainVideoReady ? 'opacity-100' : 'opacity-0') : 'opacity-100'}`}
+                        className={`h-full w-auto max-w-full object-contain transition-opacity duration-500 ${isSingleVideo ? (isMainVideoReady ? 'opacity-100' : 'opacity-0') : 'opacity-100'}`}
                         autoPlay
                         muted
                         controls={false}
@@ -343,7 +343,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                         onError={() => handleMainMediaFailure(activeVideo, 'video-element')}
                     />
                 ) : (
-                    <div className="h-full w-auto max-w-full bg-black min-h-0 min-w-0 flex items-center justify-center">
+                    <div className="h-full w-full bg-[#E87722] min-h-0 min-w-0 flex items-center justify-center">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                             src={mainContentUrl}
@@ -355,8 +355,8 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                 )}
             </div>
 
-            {/* Right Side Pane: flexible column of two images */}
-            <div className="flex-1 flex flex-col min-w-0 h-full bg-black border-l border-white/10 overflow-hidden">
+            {/* Right Side Pane: ancho fijo 25%, columna estable */}
+            <div className="w-[25%] h-full flex flex-col min-w-0 bg-black border-l border-white/10 overflow-hidden">
                 {/* Top Right Block */}
                 <div className="relative flex-1 overflow-hidden bg-black min-h-0 min-w-0">
                     {rightTopImage && (
