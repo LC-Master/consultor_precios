@@ -335,7 +335,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                     aria-hidden
                     ref={ambientVideoRef}
                     src={activeVideo!.url}
-                    className="absolute inset-0 w-full h-full object-cover scale-110 opacity-70"
+                    className="absolute inset-0 w-full h-full object-cover scale-110"
                     style={{ filter: 'blur(60px) saturate(160%) brightness(140%)' }}
                     autoPlay
                     muted
@@ -350,7 +350,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                 <video
                     ref={videoRef}
                     src={activeVideo!.url}
-                    className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-500 ${isSingleVideo ? (isMainVideoReady ? 'opacity-100' : 'opacity-0') : 'opacity-100'}`}
+                    className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-500 ${isSingleVideo ? (isMainVideoReady ? 'opacity-0' : 'opacity-0') : 'opacity-0'}`}
                     autoPlay
                     muted
                     controls={false}
