@@ -285,34 +285,17 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
         return null;
     }
 
-    // 2. Video Only Mode
-    if (hasVideos && !hasImages) {
-        return (
-            <div className="absolute inset-0 bg-black">
-                <video
-                    ref={videoRef}
-                    src={activeVideo!.url}
-                    className={`w-full h-full object-cover transition-opacity duration-500 ${isSingleVideo ? (isMainVideoReady ? 'opacity-100' : 'opacity-0') : 'opacity-100'}`}
-                    autoPlay
-                    muted
-                    controls={false}
-                    preload="auto"
-                    disablePictureInPicture
-                    disableRemotePlayback
-                    loop={isSingleVideo}
-                    playsInline
-                    onLoadedData={() => setIsMainVideoReady(true)}
-                    onEnded={isSingleVideo ? undefined : handleNextMain}
-                    onError={() => handleMainMediaFailure(activeVideo, 'video-element')}
-                />
-                <InfoOverlay />
-            </div>
-        );
-    }
+    // 2. Video Only Mode - REMOVED to maintain consistent layout
+    // We want to force the Grid layout even if there are no side images,
+    // so the main video respects the 8-col sizing and doesn't jump to fullscreen.
 
     // 3. Mixed / Image Mode
     const mainContentUrl = hasVideos ? activeVideo!.url : activeMainImage!.url;
     const isMainContentVideo = hasVideos;
+    // Determine layout: If we have images (either mixed with video or just images), we use 8/4 grid.
+    // If NO images (video only), we use full width (12 cols).
+    const showSidePanel = hasImages;
+    const mainColSpan = showSidePanel ? "col-span-8" : "col-span-12";
 
     // CRITICAL FIX: Removed 'key' props from video/img elements to encourage reuse.
     // This allows the browser to swap the 'src' attribute instantly without destroying the DOM component.
@@ -320,8 +303,8 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
 
     return (
         <div className="absolute inset-0 bg-black grid grid-cols-12 h-full">
-            {/* Left Main Pane (8 cols) - No borders, full bleed */}
-            <div className="col-span-8 relative h-full bg-black flex items-center justify-center p-0 overflow-hidden">
+            {/* Left Main Pane (8 or 12 cols) - No borders, full bleed */}
+            <div className={`${mainColSpan} relative h-full bg-black flex items-center justify-center p-0 overflow-hidden transition-all duration-500`}>
                 {isMainContentVideo ? (
                     <video
                         ref={videoRef}
@@ -353,7 +336,8 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
             </div>
 
             {/* Right Side Pane (4 cols) - Split Top/Bottom - IMAGES ONLY */}
-            <div className="col-span-4 grid grid-rows-2 h-full bg-black">
+            {showSidePanel && (
+            <div className="col-span-4 grid grid-rows-2 h-full bg-black animate-in fade-in slide-in-from-right-10 duration-700">
                 {/* Top Right Block */}
                 <div className="relative border-b border-white/10 p-0 overflow-hidden bg-black">
                     {rightTopImage && (
@@ -380,6 +364,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                     )}
                 </div>
             </div>
+            )}
 
             <InfoOverlay />
         </div>
