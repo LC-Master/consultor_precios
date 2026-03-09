@@ -292,7 +292,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                 <video
                     ref={videoRef}
                     src={activeVideo!.url}
-                    className={`max-w-full max-h-full object-contain bg-black transition-opacity duration-500 ${isSingleVideo ? (isMainVideoReady ? 'opacity-100' : 'opacity-0') : 'opacity-100'}`}
+                    className={`w-full h-full object-cover transition-opacity duration-500 ${isSingleVideo ? (isMainVideoReady ? 'opacity-100' : 'opacity-0') : 'opacity-100'}`}
                     autoPlay
                     muted
                     controls={false}
@@ -326,7 +326,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                     <video
                         ref={videoRef}
                         src={mainContentUrl}
-                        className={`max-w-full max-h-full object-contain bg-black transition-opacity duration-500 ${isSingleVideo ? (isMainVideoReady ? 'opacity-100' : 'opacity-0') : 'opacity-100'}`}
+                        className={`w-full h-full object-cover transition-opacity duration-500 ${isSingleVideo ? (isMainVideoReady ? 'opacity-100' : 'opacity-0') : 'opacity-100'}`}
                         autoPlay
                         muted
                         controls={false}
@@ -345,7 +345,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                         <img
                             src={mainContentUrl}
                             alt="Main Content"
-                            className="max-w-full max-h-full object-contain"
+                            className="w-full h-full object-cover"
                             onError={() => handleMainMediaFailure(activeMainImage, 'image-element')}
                         />
                     </div>
@@ -361,7 +361,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                         <img
                             src={rightTopImage.url}
                             alt="Next 1"
-                            className="max-w-full max-h-full object-contain"
+                            className="w-full h-full object-cover"
                             onError={() => handleSideMediaFailure(rightTopImage, 'side-image-top')}
                         />
                     )}
@@ -374,7 +374,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                         <img
                             src={rightBottomImage.url}
                             alt="Next 2"
-                            className="max-w-full max-h-full object-contain"
+                            className="w-full h-full object-cover"
                             onError={() => handleSideMediaFailure(rightBottomImage, 'side-image-bottom')}
                         />
                     )}
