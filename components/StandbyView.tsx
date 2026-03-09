@@ -258,7 +258,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                         <video
                             id="placeholder-video"
                             src={playlist.place_holder.url}
-                            className="absolute inset-0 w-full h-full object-fill"
+                            className="w-full h-full object-contain bg-black"
                             autoPlay
                             muted
                             loop
@@ -272,7 +272,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                         <img
                             src={playlist.place_holder.url}
                             alt="Placeholder"
-                            className="absolute inset-0 object-fill w-full h-full"
+                            className="w-full h-full object-contain bg-black"
                         />
                     )}
 
@@ -292,7 +292,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                 <video
                     ref={videoRef}
                     src={activeVideo!.url}
-                    className={`absolute inset-0 w-full h-full object-fill transition-opacity duration-500 ${isSingleVideo ? (isMainVideoReady ? 'opacity-100' : 'opacity-0') : 'opacity-100'}`}
+                    className={`w-full h-full object-contain bg-black transition-opacity duration-500 ${isSingleVideo ? (isMainVideoReady ? 'opacity-100' : 'opacity-0') : 'opacity-100'}`}
                     autoPlay
                     muted
                     controls={false}
@@ -326,7 +326,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                     <video
                         ref={videoRef}
                         src={mainContentUrl}
-                        className={`absolute inset-0 w-full h-full object-fill transition-opacity duration-500 ${isSingleVideo ? (isMainVideoReady ? 'opacity-100' : 'opacity-0') : 'opacity-100'}`}
+                        className={`w-full h-full object-contain bg-black transition-opacity duration-500 ${isSingleVideo ? (isMainVideoReady ? 'opacity-100' : 'opacity-0') : 'opacity-100'}`}
                         autoPlay
                         muted
                         controls={false}
@@ -340,12 +340,12 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                         onError={() => handleMainMediaFailure(activeVideo, 'video-element')}
                     />
                 ) : (
-                    <div className="absolute inset-0 w-full h-full bg-black min-h-0 min-w-0">
+                    <div className="w-full h-full bg-black min-h-0 min-w-0 flex items-center justify-center">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                             src={mainContentUrl}
                             alt="Main Content"
-                            className="absolute inset-0 object-fill w-full h-full"
+                            className="w-full h-full object-contain"
                             onError={() => handleMainMediaFailure(activeMainImage, 'image-element')}
                         />
                     </div>
@@ -361,7 +361,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                         <img
                             src={rightTopImage.url}
                             alt="Next 1"
-                            className="absolute inset-0 object-fill w-full h-full"
+                            className="w-full h-full object-contain"
                             onError={() => handleSideMediaFailure(rightTopImage, 'side-image-top')}
                         />
                     )}
@@ -374,7 +374,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                         <img
                             src={rightBottomImage.url}
                             alt="Next 2"
-                            className="absolute inset-0 object-fill w-full h-full"
+                            className="w-full h-full object-contain"
                             onError={() => handleSideMediaFailure(rightBottomImage, 'side-image-bottom')}
                         />
                     )}
