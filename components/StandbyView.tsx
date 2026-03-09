@@ -258,7 +258,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                         <video
                             id="placeholder-video"
                             src={playlist.place_holder.url}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-contain"
                             autoPlay
                             muted
                             loop
@@ -272,7 +272,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                         <img
                             src={playlist.place_holder.url}
                             alt="Placeholder"
-                            className="object-cover w-full h-full"
+                            className="object-contain w-full h-full"
                         />
                     )}
 
@@ -285,31 +285,48 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
         return null;
     }
 
-    // 2. Video Only Mode - REMOVED to maintain consistent layout
-    // We want to force the Grid layout even if there are no side images,
-    // so the main video respects the 8-col sizing and doesn't jump to fullscreen.
+    // 2. Video Only Mode
+    if (hasVideos && !hasImages) {
+        return (
+            <div className="absolute inset-0 bg-black">
+                <video
+                    ref={videoRef}
+                    src={activeVideo!.url}
+                    className={`w-full h-full object-contain transition-opacity duration-500 ${isSingleVideo ? (isMainVideoReady ? 'opacity-100' : 'opacity-0') : 'opacity-100'}`}
+                    autoPlay
+                    muted
+                    controls={false}
+                    preload="auto"
+                    disablePictureInPicture
+                    disableRemotePlayback
+                    loop={isSingleVideo}
+                    playsInline
+                    onLoadedData={() => setIsMainVideoReady(true)}
+                    onEnded={isSingleVideo ? undefined : handleNextMain}
+                    onError={() => handleMainMediaFailure(activeVideo, 'video-element')}
+                />
+                <InfoOverlay />
+            </div>
+        );
+    }
 
     // 3. Mixed / Image Mode
     const mainContentUrl = hasVideos ? activeVideo!.url : activeMainImage!.url;
     const isMainContentVideo = hasVideos;
-    // Determine layout: If we have images (either mixed with video or just images), we use 8/4 grid.
-    // If NO images (video only), we use full width (12 cols).
-    const showSidePanel = hasImages;
-    const mainColSpan = showSidePanel ? "col-span-8" : "col-span-12";
 
     // CRITICAL FIX: Removed 'key' props from video/img elements to encourage reuse.
     // This allows the browser to swap the 'src' attribute instantly without destroying the DOM component.
     // This eliminates flickering (black screens) during transitions.
 
     return (
-        <div className="absolute inset-0 bg-black grid grid-cols-12 h-full max-h-screen overflow-hidden">
-            {/* Left Main Pane (8 or 12 cols) - No borders, full bleed */}
-            <div className={`${mainColSpan} relative h-full bg-black flex items-center justify-center p-0 overflow-hidden transition-all duration-500 max-h-screen`}> 
+        <div className="absolute inset-0 bg-black grid grid-cols-12 h-full">
+            {/* Left Main Pane (8 cols) - No borders, full bleed */}
+            <div className="col-span-8 relative h-full bg-black flex items-center justify-center p-0 overflow-hidden">
                 {isMainContentVideo ? (
                     <video
                         ref={videoRef}
                         src={mainContentUrl}
-                        className={`w-full h-full object-cover transition-opacity duration-500 ${isSingleVideo ? (isMainVideoReady ? 'opacity-100' : 'opacity-0') : 'opacity-100'}`}
+                        className={`w-full h-full object-contain transition-opacity duration-500 ${isSingleVideo ? (isMainVideoReady ? 'opacity-100' : 'opacity-0') : 'opacity-100'}`}
                         autoPlay
                         muted
                         controls={false}
@@ -323,12 +340,12 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                         onError={() => handleMainMediaFailure(activeVideo, 'video-element')}
                     />
                 ) : (
-                    <div className="relative w-full h-full bg-black max-h-screen">
+                    <div className="relative w-full h-full bg-black">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                             src={mainContentUrl}
                             alt="Main Content"
-                            className="object-cover w-full h-full max-h-full max-w-full"
+                            className="object-contain w-full h-full"
                             onError={() => handleMainMediaFailure(activeMainImage, 'image-element')}
                         />
                     </div>
@@ -336,8 +353,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
             </div>
 
             {/* Right Side Pane (4 cols) - Split Top/Bottom - IMAGES ONLY */}
-            {showSidePanel && (
-            <div className="col-span-4 grid grid-rows-2 h-full max-h-screen bg-black animate-in fade-in slide-in-from-right-10 duration-700">
+            <div className="col-span-4 grid grid-rows-2 h-full bg-black">
                 {/* Top Right Block */}
                 <div className="relative border-b border-white/10 p-0 overflow-hidden bg-black">
                     {rightTopImage && (
@@ -345,7 +361,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                         <img
                             src={rightTopImage.url}
                             alt="Next 1"
-                            className="object-cover w-full h-full max-h-full max-w-full"
+                            className="object-contain w-full h-full p-2"
                             onError={() => handleSideMediaFailure(rightTopImage, 'side-image-top')}
                         />
                     )}
@@ -358,13 +374,12 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                         <img
                             src={rightBottomImage.url}
                             alt="Next 2"
-                            className="object-cover w-full h-full max-h-full max-w-full"
+                            className="object-contain w-full h-full p-2"
                             onError={() => handleSideMediaFailure(rightBottomImage, 'side-image-bottom')}
                         />
                     )}
                 </div>
             </div>
-            )}
 
             <InfoOverlay />
         </div>
