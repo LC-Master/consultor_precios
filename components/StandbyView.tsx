@@ -322,11 +322,15 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
         <div className="absolute inset-0 bg-black grid grid-cols-12 h-full">
             {/* Left Main Pane (8 cols) - No borders, full bleed */}
             <div className="col-span-8 relative h-full bg-black flex items-center justify-center p-0 overflow-hidden min-h-0 min-w-0">
+                <div
+                    className="absolute inset-0 bg-cover bg-center scale-110 blur-2xl opacity-40"
+                    style={{ backgroundImage: `url(${mainContentUrl})` }}
+                />
                 {isMainContentVideo ? (
                     <video
                         ref={videoRef}
                         src={mainContentUrl}
-                        className={`absolute inset-0 w-full h-full object-contain backdrop-blur-md transition-opacity duration-500 ${isSingleVideo ? (isMainVideoReady ? 'opacity-100' : 'opacity-0') : 'opacity-100'}`}
+                        className={`absolute inset-0 w-full z-10 h-full object-contain backdrop-blur-md transition-opacity duration-500 ${isSingleVideo ? (isMainVideoReady ? 'opacity-100' : 'opacity-0') : 'opacity-100'}`}
                         autoPlay
                         muted
                         controls={false}
