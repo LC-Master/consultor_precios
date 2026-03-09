@@ -335,8 +335,8 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                     aria-hidden
                     ref={ambientVideoRef}
                     src={activeVideo!.url}
-                    className="absolute inset-0 w-full h-full object-cover scale-110"
-                    style={{ filter: 'blur(10px) saturate(160%) brightness(140%)' }}
+                    className="absolute inset-0 w-full h-full object-cover scale-125 opacity-85"
+                    style={{ filter: 'blur(90px) saturate(200%) brightness(180%)' }}
                     autoPlay
                     muted
                     controls={false}
@@ -350,7 +350,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                 <video
                     ref={videoRef}
                     src={activeVideo!.url}
-                    className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-500 ${isSingleVideo ? (isMainVideoReady ? 'opacity-0' : 'opacity-0') : 'opacity-0'}`}
+                    className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-500 ${isSingleVideo ? (isMainVideoReady ? 'opacity-100' : 'opacity-0') : 'opacity-100'}`}
                     autoPlay
                     muted
                     controls={false}
@@ -389,8 +389,8 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                             aria-hidden
                             ref={ambientVideoRef}
                             src={mainContentUrl}
-                            className="absolute inset-0 w-full h-full object-cover scale-110 opacity-70"
-                            style={{ filter: 'blur(60px) saturate(160%) brightness(140%)' }}
+                            className="absolute inset-0 w-full h-full object-cover scale-125 opacity-85"
+                            style={{ filter: 'blur(90px) saturate(200%) brightness(180%)' }}
                             autoPlay
                             muted
                             controls={false}
