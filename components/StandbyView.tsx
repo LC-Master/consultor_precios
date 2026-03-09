@@ -20,7 +20,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
     const [nowMs, setNowMs] = useState(() => Date.now());
     const [isMainVideoReady, setIsMainVideoReady] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
-    const ambientVideoRef = useRef<HTMLVideoElement>(null);
+    const ambientCanvasRef = useRef<HTMLCanvasElement>(null);
 
     // Independent indices for fluid decoupling
     const [mainIndex, setMainIndex] = useState(0);
@@ -240,46 +240,37 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
         }
     }, [isActive, activeVideo, handleMainMediaFailure]); // Check on active state change or video change
 
-    const syncAmbientWithMain = useCallback(() => {
-        const main = videoRef.current;
-        const ambient = ambientVideoRef.current;
-        if (!main || !ambient) return;
-
-        // Keep ambient glow aligned; avoid thrashing for tiny drifts
-        const drift = Math.abs((ambient.currentTime || 0) - (main.currentTime || 0));
-        if (drift > 0.25) {
-            ambient.currentTime = main.currentTime || 0;
-        }
-    }, []);
-
     useEffect(() => {
         const main = videoRef.current;
-        if (!main) return;
+        const canvas = ambientCanvasRef.current;
+        if (!main || !canvas) return;
 
-        const handlePlay = () => {
-            if (ambientVideoRef.current && ambientVideoRef.current.paused) {
-                ambientVideoRef.current.play().catch(() => undefined);
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        let rafId: number;
+
+        const render = () => {
+            if (main.readyState >= 2) {
+                const vw = main.videoWidth || canvas.width;
+                const vh = main.videoHeight || canvas.height;
+                if (vw && vh && (canvas.width !== vw || canvas.height !== vh)) {
+                    canvas.width = vw;
+                    canvas.height = vh;
+                }
+                if (vw && vh) {
+                    ctx.drawImage(main, 0, 0, canvas.width, canvas.height);
+                }
             }
+            rafId = requestAnimationFrame(render);
         };
 
-        const handlePause = () => {
-            ambientVideoRef.current?.pause();
-        };
-
-        const handleTimeUpdate = () => {
-            syncAmbientWithMain();
-        };
-
-        main.addEventListener('play', handlePlay);
-        main.addEventListener('pause', handlePause);
-        main.addEventListener('timeupdate', handleTimeUpdate);
+        rafId = requestAnimationFrame(render);
 
         return () => {
-            main.removeEventListener('play', handlePlay);
-            main.removeEventListener('pause', handlePause);
-            main.removeEventListener('timeupdate', handleTimeUpdate);
+            cancelAnimationFrame(rafId);
         };
-    }, [syncAmbientWithMain, hasVideos, activeVideo?.url]);
+    }, [hasVideos, activeVideo?.url, isActive]);
 
     // Handler for Video End/Error to Ensure Rotation
     const handleNextMain = () => {
@@ -331,20 +322,11 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
     if (hasVideos && !hasImages) {
         return (
             <div className="absolute inset-0 bg-black overflow-hidden">
-                <video
+                <canvas
+                    ref={ambientCanvasRef}
+                    className="absolute inset-0 w-full h-full object-cover scale-125"
+                    style={{ filter: 'blur(80px)' }}
                     aria-hidden
-                    ref={ambientVideoRef}
-                    src={activeVideo!.url}
-                    className="absolute inset-0 w-full h-full object-cover scale-125 opacity-85"
-                    style={{ filter: 'blur(90px) saturate(200%) brightness(180%)' }}
-                    autoPlay
-                    muted
-                    controls={false}
-                    preload="auto"
-                    disablePictureInPicture
-                    disableRemotePlayback
-                    loop={isSingleVideo}
-                    playsInline
                 />
 
                 <video
@@ -359,10 +341,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                     disableRemotePlayback
                     loop={isSingleVideo}
                     playsInline
-                    onLoadedData={() => {
-                        syncAmbientWithMain();
-                        setIsMainVideoReady(true);
-                    }}
+                    onLoadedData={() => setIsMainVideoReady(true)}
                     onEnded={isSingleVideo ? undefined : handleNextMain}
                     onError={() => handleMainMediaFailure(activeVideo, 'video-element')}
                 />
@@ -385,20 +364,11 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
             <div className="col-span-8 relative h-full bg-black flex items-center justify-center p-0 overflow-hidden min-h-0 min-w-0">
                 {isMainContentVideo ? (
                     <>
-                        <video
+                        <canvas
+                            ref={ambientCanvasRef}
+                            className="absolute inset-0 w-full h-full object-cover scale-125"
+                            style={{ filter: 'blur(80px)' }}
                             aria-hidden
-                            ref={ambientVideoRef}
-                            src={mainContentUrl}
-                            className="absolute inset-0 w-full h-full object-cover scale-125 opacity-85"
-                            style={{ filter: 'blur(90px) saturate(200%) brightness(180%)' }}
-                            autoPlay
-                            muted
-                            controls={false}
-                            preload="auto"
-                            disablePictureInPicture
-                            disableRemotePlayback
-                            loop={isSingleVideo}
-                            playsInline
                         />
                         <video
                             ref={videoRef}
@@ -412,10 +382,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                             disableRemotePlayback
                             loop={isSingleVideo}
                             playsInline
-                            onLoadedData={() => {
-                                syncAmbientWithMain();
-                                setIsMainVideoReady(true);
-                            }}
+                            onLoadedData={() => setIsMainVideoReady(true)}
                             onEnded={isSingleVideo ? undefined : handleNextMain}
                             onError={() => handleMainMediaFailure(activeVideo, 'video-element')}
                         />
