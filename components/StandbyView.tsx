@@ -367,7 +367,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                         <canvas
                             ref={ambientCanvasRef}
                             className="absolute inset-0 w-full h-full object-cover scale-125"
-                            style={{ filter: 'blur(80px)' }}
+                            style={{ filter: 'blur(25px)' }}
                             aria-hidden
                         />
                         <video
