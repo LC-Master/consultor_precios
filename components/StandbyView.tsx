@@ -330,7 +330,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                     <video
                         ref={videoRef}
                         src={mainContentUrl}
-                        className={`absolute inset-0 w-full z-10 h-full object-contain backdrop-blur-md transition-opacity duration-500 ${isSingleVideo ? (isMainVideoReady ? 'opacity-100' : 'opacity-0') : 'opacity-100'}`}
+                        className={`absolute inset-0 w-full z-10 h-full object-contain transition-opacity duration-500 ${isSingleVideo ? (isMainVideoReady ? 'opacity-100' : 'opacity-0') : 'opacity-100'}`}
                         autoPlay
                         muted
                         controls={false}
