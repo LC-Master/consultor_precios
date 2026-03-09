@@ -321,12 +321,12 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
     return (
         <div className="absolute inset-0 bg-black grid grid-cols-12 h-full">
             {/* Left Main Pane (8 cols) - No borders, full bleed */}
-            <div className="col-span-8 relative h-full bg-black flex items-center justify-center p-0 overflow-hidden">
+            <div className="col-span-8 relative h-full bg-black flex items-center justify-center p-0 overflow-hidden min-h-0 min-w-0">
                 {isMainContentVideo ? (
                     <video
                         ref={videoRef}
                         src={mainContentUrl}
-                        className={`w-full h-full object-cover transition-opacity duration-500 ${isSingleVideo ? (isMainVideoReady ? 'opacity-100' : 'opacity-0') : 'opacity-100'}`}
+                        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${isSingleVideo ? (isMainVideoReady ? 'opacity-100' : 'opacity-0') : 'opacity-100'}`}
                         autoPlay
                         muted
                         controls={false}
@@ -340,12 +340,12 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                         onError={() => handleMainMediaFailure(activeVideo, 'video-element')}
                     />
                 ) : (
-                    <div className="relative w-full h-full bg-black">
+                    <div className="absolute inset-0 w-full h-full bg-black min-h-0 min-w-0">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                             src={mainContentUrl}
                             alt="Main Content"
-                            className="object-cover w-full h-full"
+                            className="absolute inset-0 object-cover w-full h-full"
                             onError={() => handleMainMediaFailure(activeMainImage, 'image-element')}
                         />
                     </div>
@@ -353,28 +353,28 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
             </div>
 
             {/* Right Side Pane (4 cols) - Split Top/Bottom - IMAGES ONLY */}
-            <div className="col-span-4 grid grid-rows-2 h-full bg-black">
+            <div className="col-span-4 grid grid-rows-2 h-full bg-black min-h-0 min-w-0">
                 {/* Top Right Block */}
-                <div className="relative border-b border-white/10 p-0 overflow-hidden bg-black">
+                <div className="relative border-b border-white/10 p-0 overflow-hidden bg-black min-h-0 min-w-0">
                     {rightTopImage && (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                             src={rightTopImage.url}
                             alt="Next 1"
-                            className="object-cover w-full h-full"
+                            className="absolute inset-0 object-cover w-full h-full"
                             onError={() => handleSideMediaFailure(rightTopImage, 'side-image-top')}
                         />
                     )}
                 </div>
 
                 {/* Bottom Right Block */}
-                <div className="relative p-0 overflow-hidden bg-black">
+                <div className="relative p-0 overflow-hidden bg-black min-h-0 min-w-0">
                     {rightBottomImage && (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                             src={rightBottomImage.url}
                             alt="Next 2"
-                            className="object-cover w-full h-full"
+                            className="absolute inset-0 object-cover w-full h-full"
                             onError={() => handleSideMediaFailure(rightBottomImage, 'side-image-bottom')}
                         />
                     )}
