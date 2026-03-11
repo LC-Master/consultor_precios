@@ -1,10 +1,7 @@
 import { z } from "zod";
 
-export const codeSchema = z.coerce
-    .number({ error: "Invalid code" })
-    .int({ error: "Invalid code" })
-    .nonnegative({ error: "Invalid code" })
-    .min(1, "Invalid code")
-    .transform((val) => val.toString())
-    .pipe(z.string().max(13, "Invalid code"))
+export const codeSchema = z
+    .string({ error: "Invalid code" })
+    .regex(/^\d+$/, "Invalid code")
+    .max(16, "Invalid code")
     .describe("Bar code of the product");
