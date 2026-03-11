@@ -39,7 +39,6 @@ export async function GET(request: NextRequest) {
 
     const code = request.nextUrl.searchParams.get("code");
     const parsedCode = codeSchema.safeParse(code);
-    logger.info(parsedCode);
     if (!parsedCode.success) {
         return NextResponse.json({ error: "Invalid code parameter" }, { status: 400 });
     }
