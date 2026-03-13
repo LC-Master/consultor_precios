@@ -6,8 +6,10 @@ import InfoOverlay from './modals/InfoOverlay';
 import { StandbyViewProps, MediaItem } from '@/types/index.type';
 import ms from 'ms';
 import { isVideo } from '@/lib/isVideo';
+import FallBackPost from './ui/FallBackPost';
+import PosImageCarousel from './ui/PosImageCarousel';
 
-export default function StandbyView({ playlist, isActive = true }: StandbyViewProps) {
+export default function StandbyView({ playlist, isActive = true, videoOnly = false }: StandbyViewProps) {
     const FAILED_MEDIA_COOLDOWN_MS = ms(process.env.NEXT_PUBLIC_FAILED_MEDIA_COOLDOWN_S || '5s');
     const CLIENT_REFRESH_THROTTLE_MS = ms('90s');
     const MIN_FAILED_MEDIA_COOLDOWN_MS = ms('60s');
@@ -19,6 +21,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
     const lastRefreshRequestAtRef = useRef(0);
     const [nowMs, setNowMs] = useState(() => Date.now());
     const [isMainVideoReady, setIsMainVideoReady] = useState(false);
+    const [placeholderMediaFailed, setPlaceholderMediaFailed] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
     const ambientCanvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -37,10 +40,16 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
             const sourceList: MediaItem[] = [];
             if (playlist.campaigns) {
                 playlist.campaigns.forEach(campaign => {
-                    const list = isAm ? campaign.am : campaign.pm;
-                    if (list) {
-                        sourceList.push(...list);
-                    }
+                    const primarySlot = isAm ? campaign.am : campaign.pm;
+                    const fallbackSlot = isAm ? campaign.pm : campaign.am;
+                    
+                    // Best Practice: POS (videoOnly) adheres strictly to the scheduled slot.
+                    // Consultor (Check mode) retains backwards compatibility (uses fallback if empty).
+                    const selectedList = (primarySlot?.length ?? 0) > 0 
+                        ? primarySlot 
+                        : (videoOnly ? [] : fallbackSlot);
+                        
+                    if (selectedList) sourceList.push(...selectedList);
                 });
             }
 
@@ -71,7 +80,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
         updateContent();
         const interval = setInterval(updateContent, ms('60s'));
         return () => clearInterval(interval);
-    }, [playlist]);
+    }, [playlist, videoOnly]);
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -83,6 +92,10 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
     useEffect(() => {
         failedUntilByUrlRef.current = failedUntilByUrl;
     }, [failedUntilByUrl]);
+
+    useEffect(() => {
+        setPlaceholderMediaFailed(false);
+    }, [playlist.place_holder?.url, playlist.place_holder?.fileType]);
 
     useEffect(() => {
         const handlePlaylistRefreshSuccess = () => {
@@ -277,12 +290,14 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
         setMainIndex(prev => prev + 1);
     };
 
-    // --- Render Logic ---
-
-    // 1. Placeholder / Empty
     if (isEmpty) {
         if (playlist.place_holder?.url) {
             const isPlaceholderVideo = isVideo(playlist.place_holder.fileType);
+            const canUsePlaceholder = !(videoOnly && !isPlaceholderVideo);
+
+            if (!canUsePlaceholder || placeholderMediaFailed) {
+                return FallBackPost(videoOnly);
+            }
 
             return (
                 <div className="absolute inset-0 bg-black h-full">
@@ -298,7 +313,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                             disablePictureInPicture
                             disableRemotePlayback
                             playsInline
-                            onError={() => undefined}
+                            onError={() => setPlaceholderMediaFailed(true)}
                         />
                     ) : (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -306,48 +321,60 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                             src={playlist.place_holder.url}
                             alt="Placeholder"
                             className="object-cover w-full h-full"
+                            onError={() => setPlaceholderMediaFailed(true)}
                         />
                     )}
 
-                    {/* Standard Info Overlay */}
-                    <InfoOverlay />
+                    {/* Standard Info Overlay (disabled for POS/video-only mode) */}
+                    {!videoOnly && <InfoOverlay />}
                 </div>
             )
         }
 
-        return null;
+        return FallBackPost(videoOnly);
     }
 
-    // 2. Video Only Mode
-    if (hasVideos && !hasImages) {
-        return (
-            <div className="absolute inset-0 bg-black overflow-hidden">
-                <canvas
-                    ref={ambientCanvasRef}
-                    className="absolute inset-0 w-full h-full object-cover scale-125"
-                    style={{ filter: 'blur(80px)' }}
-                    aria-hidden
-                />
+    // 2. Fullscreen Modes (POS mode, or Check mode with only videos)
+    if (videoOnly || (hasVideos && !hasImages)) {
+        if (hasVideos) {
+            return (
+                <div className="absolute inset-0 bg-black overflow-hidden">
+                    <canvas
+                        ref={ambientCanvasRef}
+                        className="absolute inset-0 w-full h-full object-cover scale-125"
+                        style={{ filter: 'blur(80px)' }}
+                        aria-hidden
+                    />
 
-                <video
-                    ref={videoRef}
-                    src={activeVideo!.url}
-                    className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-500 ${isSingleVideo ? (isMainVideoReady ? 'opacity-100' : 'opacity-0') : 'opacity-100'}`}
-                    autoPlay
-                    muted
-                    controls={false}
-                    preload="auto"
-                    disablePictureInPicture
-                    disableRemotePlayback
-                    loop={isSingleVideo}
-                    playsInline
-                    onLoadedData={() => setIsMainVideoReady(true)}
-                    onEnded={isSingleVideo ? undefined : handleNextMain}
-                    onError={() => handleMainMediaFailure(activeVideo, 'video-element')}
+                    <video
+                        ref={videoRef}
+                        src={activeVideo!.url}
+                        className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-500 ${isSingleVideo ? (isMainVideoReady ? 'opacity-100' : 'opacity-0') : 'opacity-100'}`}
+                        autoPlay
+                        muted
+                        controls={false}
+                        preload="auto"
+                        disablePictureInPicture
+                        disableRemotePlayback
+                        loop={isSingleVideo}
+                        playsInline
+                        onLoadedData={() => setIsMainVideoReady(true)}
+                        onEnded={isSingleVideo ? undefined : handleNextMain}
+                        onError={() => handleMainMediaFailure(activeVideo, 'video-element')}
+                    />
+                    {!videoOnly && <InfoOverlay />}
+                </div>
+            );
+        }
+
+        if (videoOnly && hasImages) {
+            return (
+                <PosImageCarousel 
+                    image={activeMainImage!} 
+                    onError={() => handleMainMediaFailure(activeMainImage, 'image-element')} 
                 />
-                <InfoOverlay />
-            </div>
-        );
+            );
+        }
     }
 
     // 3. Mixed / Image Mode
@@ -429,7 +456,7 @@ export default function StandbyView({ playlist, isActive = true }: StandbyViewPr
                 </div>
             </div>
 
-            <InfoOverlay />
+            {!videoOnly && <InfoOverlay />}
         </div>
     );
 }

@@ -23,6 +23,7 @@ export interface PlaylistData {
 export interface StandbyViewProps {
   playlist: PlaylistData;
   isActive?: boolean;
+  videoOnly?: boolean;
 }
 
 export interface ApiPlaylistRoot {

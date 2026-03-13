@@ -1,3 +1,4 @@
 export const isVideo = (fileType: string) => {
-    return ['mp4'].includes(fileType.toLowerCase());
+    const normalized = fileType.replace('.', '').trim().toLowerCase();
+    return ['mp4', 'webm', 'ogg', 'mov', 'm4v'].some(ext => normalized.includes(ext));
 };
