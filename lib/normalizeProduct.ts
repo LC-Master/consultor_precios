@@ -1,5 +1,6 @@
 import { IProduct } from "@/app/schemas/product.schema";
 import { Product } from "@/types/product.type";
+import { logger } from "./logger";
 
 /**
  * The `normalizeProduct` function in TypeScript normalizes product data and includes promotion details
@@ -11,13 +12,26 @@ import { Product } from "@/types/product.type";
  * `articleCode`, `description`, `prices`, `promotion`, and `rate`. The `promotion` property is
  * conditionally included based on whether the input product has a promotion.
  */
-export const normalizeProduct = (product: IProduct): Product => {
+export const normalizeProduct = async (product: IProduct): Promise<Product> => {
     const hasPromotion = !!(product.NomProm && product.PorcDesc && product.PorcDesc > 0);
+    let imageUrl: string | null = null;
+    try {
+        const res = await fetch(`https://www.locatel.com.ve/api/catalog_system/pub/products/search?fq=skuId:${product.CodArticulo}`);
+        const data = await res.json();
+        const imageUrlBase = new URL(data[0].items[0].images[0].imageUrl);
+        imageUrlBase.searchParams.delete("v")
+        imageUrl = imageUrlBase.toString();
+    } catch (error) {
+        imageUrl = '/test.webp';
+
+    }
+
     return {
         isBlocked: product.Bloqueado,
         barCode: product.CodBarra,
         articleCode: product.CodArticulo,
         description: product.Descripcion,
+        imageUrl,
         prices: {
             base: product.PrecioBase,
             tax: product.PctIva,

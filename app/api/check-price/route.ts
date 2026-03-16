@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
 
         const product = parsedInfo.data as IProduct;
 
-        const resultProcessed = normalizeProduct(product);
+        const resultProcessed = await normalizeProduct(product);
 
         return NextResponse.json(resultProcessed, { status: 200 });
 

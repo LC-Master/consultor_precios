@@ -8,7 +8,7 @@ function formatMoney(value: number | null | undefined, currency: "Bs" | "$" | "â
 
 export default function ProductView({ product, inputRef }: { product: Product, inputRef: React.RefObject<HTMLInputElement | null> }) {
     if (!product) return null;
-
+    
     const hasPromotion = !!product.promotion;
     const promotionLabel = product.promotion?.name?.trim() || "Descuento Especial";
     // According to types provided:
@@ -35,7 +35,7 @@ export default function ProductView({ product, inputRef }: { product: Product, i
                 <div className="absolute inset-0 bg-locatel-medio/5"></div>
                 <div className="relative w-full h-full p-6 flex items-center justify-center">
                     <Image
-                        src="/test.webp"
+                        src={product.imageUrl || '/test.webp'}
                         alt={product.description || "Producto"}
                         fill
                         className="object-contain p-2 mix-blend-multiply transition-transform duration-500 hover:scale-105"
