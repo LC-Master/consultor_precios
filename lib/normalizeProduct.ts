@@ -1,6 +1,5 @@
 import { IProduct } from "@/app/schemas/product.schema";
 import { Product } from "@/types/product.type";
-import { logger } from "./logger";
 
 /**
  * The `normalizeProduct` function in TypeScript normalizes product data and includes promotion details

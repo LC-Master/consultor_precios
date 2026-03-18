@@ -14,6 +14,9 @@ export default function StandbyView({ playlist, isActive = true, videoOnly = fal
     const FAILED_MEDIA_COOLDOWN_MS = Number.isFinite(configuredCooldownSeconds) && configuredCooldownSeconds > 0
         ? configuredCooldownSeconds * 1000
         : ms('5s');
+    const MEDIA_ROTATE_IMAGE_S = Number.isFinite(Number(process.env.NEXT_PUBLIC_TIME_ROTATE_IMAGE_S)) && Number(process.env.NEXT_PUBLIC_TIME_ROTATE_IMAGE_S) > 0
+        ? Number(process.env.NEXT_PUBLIC_TIME_ROTATE_IMAGE_S) * 1000
+        : ms('8s');
     const CLIENT_REFRESH_THROTTLE_MS = ms('90s');
     const MIN_FAILED_MEDIA_COOLDOWN_MS = ms('60s');
     const MAX_FAILED_MEDIA_COOLDOWN_MS = ms('15m');
@@ -243,7 +246,7 @@ export default function StandbyView({ playlist, isActive = true, videoOnly = fal
         // Rotate side images every 8 seconds, completely independent of the video
         const sideTimer = setInterval(() => {
             setSideIndex(prev => prev + 2);
-        }, ms('8s'));
+        }, MEDIA_ROTATE_IMAGE_S);
 
         return () => clearInterval(sideTimer);
     }, [hasImages, isActive]);

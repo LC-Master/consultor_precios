@@ -13,6 +13,16 @@ export const envSchema = z.object(
       .nonoptional({ error: "NEXT_PUBLIC_TIMEOUT_SECONDS es obligatorio" })
       .describe("Tiempo de espera en segundos para las solicitudes del cliente")
       .default(25),
+      NEXT_PUBLIC_TIME_ROTATE_IMAGE_S: z.coerce
+      .number({
+        error: "NEXT_PUBLIC_TIME_ROTATE_IMAGE_S debe ser un número",
+      })
+      .int({ message: "NEXT_PUBLIC_TIME_ROTATE_IMAGE_S debe ser un número entero" })
+      .min(1, "NEXT_PUBLIC_TIME_ROTATE_IMAGE_S debe ser al menos 1 segundo")
+      .max(300, "NEXT_PUBLIC_TIME_ROTATE_IMAGE_S no puede ser mayor a 300 segundos (5 minutos)")
+      .nonoptional({ error: "NEXT_PUBLIC_TIME_ROTATE_IMAGE_S es obligatorio" })
+      .describe("Tiempo en segundos para rotar las imágenes en el carrusel")
+      .default(8),
     NEXT_PUBLIC_API_URL_CDS: z
       .url({ error: "NEXT_PUBLIC_API_URL_CDS debe ser una URL válida" })
       .min(1, "NEXT_PUBLIC_API_URL_CDS no puede estar vacío")
