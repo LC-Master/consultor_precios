@@ -10,7 +10,7 @@ import FallBackPost from './ui/FallBackPost';
 import PosImageCarousel from './ui/PosImageCarousel';
 
 export default function StandbyView({ playlist, isActive = true, videoOnly = false }: StandbyViewProps) {
-    const FAILED_MEDIA_COOLDOWN_MS = ms(process.env.NEXT_PUBLIC_FAILED_MEDIA_COOLDOWN_S || '5s');
+    const FAILED_MEDIA_COOLDOWN_MS = ms(`${process.env.NEXT_PUBLIC_FAILED_MEDIA_COOLDOWN_S}` || '5s');
     const CLIENT_REFRESH_THROTTLE_MS = ms('90s');
     const MIN_FAILED_MEDIA_COOLDOWN_MS = ms('60s');
     const MAX_FAILED_MEDIA_COOLDOWN_MS = ms('15m');
@@ -42,13 +42,13 @@ export default function StandbyView({ playlist, isActive = true, videoOnly = fal
                 playlist.campaigns.forEach(campaign => {
                     const primarySlot = isAm ? campaign.am : campaign.pm;
                     const fallbackSlot = isAm ? campaign.pm : campaign.am;
-                    
+
                     // Best Practice: POS (videoOnly) adheres strictly to the scheduled slot.
                     // Consultor (Check mode) retains backwards compatibility (uses fallback if empty).
-                    const selectedList = (primarySlot?.length ?? 0) > 0 
-                        ? primarySlot 
+                    const selectedList = (primarySlot?.length ?? 0) > 0
+                        ? primarySlot
                         : (videoOnly ? [] : fallbackSlot);
-                        
+
                     if (selectedList) sourceList.push(...selectedList);
                 });
             }
@@ -369,9 +369,9 @@ export default function StandbyView({ playlist, isActive = true, videoOnly = fal
 
         if (videoOnly && hasImages) {
             return (
-                <PosImageCarousel 
-                    image={activeMainImage!} 
-                    onError={() => handleMainMediaFailure(activeMainImage, 'image-element')} 
+                <PosImageCarousel
+                    image={activeMainImage!}
+                    onError={() => handleMainMediaFailure(activeMainImage, 'image-element')}
                 />
             );
         }
