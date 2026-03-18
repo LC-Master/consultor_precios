@@ -5,6 +5,7 @@ import { deepEqual } from '@/lib/deepEqual';
 
 export function usePlaylist() {
     const [playlist, setPlaylist] = useState<PlaylistData>({ campaigns: [] });
+    const latestPlaylistRef = useRef<PlaylistData>({ campaigns: [] });
     const eventSourceRef = useRef<EventSource | null>(null);
     const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const playlistPollIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -59,25 +60,33 @@ export function usePlaylist() {
                             : undefined
                     };
 
+                    const hasPlaylistChanged = !deepEqual(latestPlaylistRef.current, transformedPlaylist);
+
                     // Preload
                     const preloadMedia = (url: string, fileType: string) => {
                         return new Promise<void>((resolve) => {
                             const isVideo = ['mp4', 'webm', 'ogg', 'mov'].some(ext => fileType.toLowerCase().includes(ext));
                             if (isVideo) {
                                 const video = document.createElement('video');
-                                video.preload = 'auto';
+                                video.preload = 'metadata';
                                 video.onloadeddata = () => {
+                                    video.src = '';
                                     resolve();
                                 };
                                 video.onerror = () => {
+                                    video.src = '';
                                     resolve();
                                 };
                                 video.src = url;
                                 video.load();
                             } else {
                                 const img = new Image();
-                                img.onload = () => resolve();
+                                img.onload = () => {
+                                    img.src = '';
+                                    resolve();
+                                };
                                 img.onerror = () => {
+                                    img.src = '';
                                     resolve();
                                 };
                                 img.src = url;
@@ -97,19 +106,22 @@ export function usePlaylist() {
                         });
                     }
 
-                    const promises = items.map(item => preloadMedia(item.url, item.fileType));
-                    if (promises.length > 0) {
-                        void Promise.all(promises);
+                    if (hasPlaylistChanged) {
+                        const MAX_PRELOAD = 12;
+                        const uniqueItems = Array.from(new Map(items.map(item => [item.url, item])).values());
+                        const limitedItems = uniqueItems.slice(0, MAX_PRELOAD);
+                        const promises = limitedItems.map(item => preloadMedia(item.url, item.fileType));
+                        if (promises.length > 0) {
+                            void Promise.all(promises);
+                        }
                     }
 
-                    setPlaylist(prev => {
-                        if (deepEqual(prev, transformedPlaylist)) return prev;
-                        return transformedPlaylist;
-                    });
+                    latestPlaylistRef.current = transformedPlaylist;
+                    setPlaylist(prev => hasPlaylistChanged ? transformedPlaylist : prev);
 
-                    // Notify standby media layer that playlist fetch succeeded,
-                    // even if payload was equal, so failed media can be retried.
-                    window.dispatchEvent(new CustomEvent('playlist:refresh-success'));
+                    if (hasPlaylistChanged) {
+                        window.dispatchEvent(new CustomEvent('playlist:refresh-success'));
+                    }
                 }
             } catch {
                 return;

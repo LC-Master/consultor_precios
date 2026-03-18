@@ -10,7 +10,10 @@ import FallBackPost from './ui/FallBackPost';
 import PosImageCarousel from './ui/PosImageCarousel';
 
 export default function StandbyView({ playlist, isActive = true, videoOnly = false }: StandbyViewProps) {
-    const FAILED_MEDIA_COOLDOWN_MS = ms(`${process.env.NEXT_PUBLIC_FAILED_MEDIA_COOLDOWN_S}` || '5s');
+    const configuredCooldownSeconds = Number(process.env.NEXT_PUBLIC_FAILED_MEDIA_COOLDOWN_S);
+    const FAILED_MEDIA_COOLDOWN_MS = Number.isFinite(configuredCooldownSeconds) && configuredCooldownSeconds > 0
+        ? configuredCooldownSeconds * 1000
+        : ms('5s');
     const CLIENT_REFRESH_THROTTLE_MS = ms('90s');
     const MIN_FAILED_MEDIA_COOLDOWN_MS = ms('60s');
     const MAX_FAILED_MEDIA_COOLDOWN_MS = ms('15m');
@@ -24,6 +27,7 @@ export default function StandbyView({ playlist, isActive = true, videoOnly = fal
     const [placeholderMediaFailed, setPlaceholderMediaFailed] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
     const ambientCanvasRef = useRef<HTMLCanvasElement>(null);
+    const retryTimeoutByUrlRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
     // Independent indices for fluid decoupling
     const [mainIndex, setMainIndex] = useState(0);
@@ -99,14 +103,20 @@ export default function StandbyView({ playlist, isActive = true, videoOnly = fal
 
     useEffect(() => {
         const handlePlaylistRefreshSuccess = () => {
-            failureCountByUrlRef.current = {};
-            setFailedUntilByUrl({});
+            // Keep backoff state so refresh-success does not instantly re-enable failed URLs.
             setNowMs(Date.now());
         };
 
         window.addEventListener('playlist:refresh-success', handlePlaylistRefreshSuccess);
         return () => {
             window.removeEventListener('playlist:refresh-success', handlePlaylistRefreshSuccess);
+        };
+    }, []);
+
+    useEffect(() => {
+        return () => {
+            Object.values(retryTimeoutByUrlRef.current).forEach(clearTimeout);
+            retryTimeoutByUrlRef.current = {};
         };
     }, []);
 
@@ -142,7 +152,12 @@ export default function StandbyView({ playlist, isActive = true, videoOnly = fal
 
         requestPlaylistRefresh();
 
-        setTimeout(() => {
+        const existingTimeout = retryTimeoutByUrlRef.current[item.url];
+        if (existingTimeout) {
+            clearTimeout(existingTimeout);
+        }
+
+        retryTimeoutByUrlRef.current[item.url] = setTimeout(() => {
             setFailedUntilByUrl(prev => {
                 const currentRetryAt = prev[item.url];
                 if (!currentRetryAt || currentRetryAt > Date.now()) return prev;
@@ -150,6 +165,7 @@ export default function StandbyView({ playlist, isActive = true, videoOnly = fal
                 delete next[item.url];
                 return next;
             });
+            delete retryTimeoutByUrlRef.current[item.url];
         }, adaptiveCooldownMs + 250);
 
         return true;
