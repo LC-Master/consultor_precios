@@ -1,16 +1,15 @@
 import { useState, useRef, useEffect, ChangeEvent } from 'react';
-import ms, { type StringValue } from "ms";
+import ms from "ms";
 import type { Product } from "@/types/product.type";
 import getProduct from "@/lib/getProduct";
 
 export function useProductSearch() {
-  const TIMEOUT = `${process.env.NEXT_PUBLIC_TIMEOUT_SECONDS}s` || "25s";
-  const TIMEOUT_MS = ms(TIMEOUT as StringValue);
+  const TIMEOUT_MS = ms(`${process.env.NEXT_PUBLIC_TIMEOUT_SECONDS}s` || "25s");
 
   const [code, setCode] = useState("");
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);""
   const inputRef = useRef<HTMLInputElement>(null);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 

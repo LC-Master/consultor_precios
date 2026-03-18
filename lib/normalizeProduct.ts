@@ -22,7 +22,7 @@ export const normalizeProduct = async (product: IProduct): Promise<Product> => {
         imageUrlBase.searchParams.delete("v")
         imageUrl = imageUrlBase.toString();
     } catch (error) {
-        imageUrl = '/test.webp';
+        imageUrl = '/locatel.webp';
 
     }
 
@@ -46,6 +46,7 @@ export const normalizeProduct = async (product: IProduct): Promise<Product> => {
             priceWithTax: product.PrecioIVAProm,
             referencePrice: product.PrecioRefProm,
             savings: (product.PrecioIva ?? 0) - (product.PrecioIVAProm ?? 0),
+            dolarSavings: (product.PrecioRefProm ?? 0) - (product.PrecioRefProm ?? 0),
             discountPercentage: product.PorcDesc,
         } : null,
         rate: {

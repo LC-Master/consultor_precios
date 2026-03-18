@@ -1,14 +1,11 @@
-﻿import { Product } from "@/types/product.type";
+﻿import { formatMoney } from "@/lib/formatMoney";
+import { Product } from "@/types/product.type";
 import Image from "next/image";
-
-function formatMoney(value: number | null | undefined, currency: "Bs" | "$" | "€" = "Bs") {
-    if (typeof value !== "number" || Number.isNaN(value)) return null;
-    return `${new Intl.NumberFormat("es-VE", { maximumFractionDigits: 2, minimumFractionDigits: 2 }).format(value)} ${currency}`;
-}
+import SavingsBadge from "./SavingsBadge";
 
 export default function ProductView({ product, inputRef }: { product: Product, inputRef: React.RefObject<HTMLInputElement | null> }) {
     if (!product) return null;
-    
+
     const hasPromotion = !!product.promotion;
     const promotionLabel = product.promotion?.name?.trim() || "Descuento Especial";
     // According to types provided:
@@ -25,7 +22,7 @@ export default function ProductView({ product, inputRef }: { product: Product, i
 
     return (
         <div
-            className="w-full max-w-[95vw] md:max-w-5xl bg-white rounded-2xl shadow-2xl shadow-slate-200 overflow-hidden flex flex-col md:flex-row max-h-[88vh] border border-slate-100"
+            className="w-full max-w-[95vw] md:max-w-8xl bg-white rounded-2xl shadow-2xl shadow-slate-200 overflow-hidden flex flex-col md:flex-row max-h-[88vh] border border-slate-100 grow hover:scale-105 transition-transform duration-500"
             onClick={(e) => {
                 e.stopPropagation();
                 inputRef?.current?.focus();
@@ -35,7 +32,7 @@ export default function ProductView({ product, inputRef }: { product: Product, i
                 <div className="absolute inset-0 bg-locatel-medio/5"></div>
                 <div className="relative w-full h-full p-6 flex items-center justify-center">
                     <Image
-                        src={product.imageUrl || '/test.webp'}
+                        src={product.imageUrl || '/locatel.webp'}
                         alt={product.description || "Producto"}
                         fill
                         className="object-contain p-2 mix-blend-multiply transition-transform duration-500 hover:scale-105"
@@ -67,16 +64,16 @@ export default function ProductView({ product, inputRef }: { product: Product, i
 
                 <div className="flex gap-3 mb-4 relative">
                     {hasPromotion && (
-                        <div className="absolute -top-2 -right-1 z-20 bg-locatel-oro text-white w-14 h-14 rounded-full flex flex-col items-center justify-center shadow-lg transform rotate-12 border-2 border-white">
-                            <span className="text-[10px] font-bold leading-none">-{product.promotion?.discountPercentage}%</span>
+                        <div className="absolute -top-4 -right-3 z-20 bg-locatel-oro text-white w-18 h-18 rounded-full flex flex-col items-center justify-center shadow-lg transform rotate-12 border-2 border-white">
+                            <span className="text-[16px] font-bold leading-none">-{product.promotion?.discountPercentage}%</span>
                         </div>
                     )}
 
                     <div className={`flex-1 bg-slate-50 p-3 rounded-xl border flex flex-col items-center text-center ${hasPromotion ? "border-locatel-medio/10" : "border-slate-200"}`}>
-                        <span className="text-[8px] font-black uppercase tracking-widest text-slate-400 mb-0.5">Bolívares</span>
+                        <span className="text-[12px] font-black uppercase tracking-widest text-slate-400 mb-0.5">Bolívares</span>
                         <div className="flex flex-col">
                             {hasPromotion && (
-                                <span className="text-[9px] line-through text-slate-400 decoration-red-400/50">
+                                <span className="text-[18px] line-through text-slate-400 decoration-red-400/50">
                                     {formatMoney(oldPriceBs, "Bs")}
                                 </span>
                             )}
@@ -85,35 +82,36 @@ export default function ProductView({ product, inputRef }: { product: Product, i
                             </div>
                         </div>
                         <div className="flex flex-col items-center mt-0.5">
-                            <span className="text-[8px] font-bold text-slate-400">IVA INC.</span>
-                            <span className="text-[7px] font-medium text-slate-400/80">
-                                (IVA: {formatMoney(hasPromotion ? product.promotion?.taxAmount : product.prices.taxAmount, "Bs")})
+                            <span className="text-[10px] font-bold text-slate-400">IVA INC.</span>
+                            <span className="text-[11px] font-medium text-slate-400/80">
+                                (IVA 16%: {formatMoney(hasPromotion ? product.promotion?.taxAmount : product.prices.taxAmount, "Bs")})
                             </span>
                         </div>
                     </div>
 
                     <div className="flex-1 bg-locatel-medio text-white p-3 rounded-xl shadow-lg shadow-locatel-medio/20 flex flex-col items-center text-center">
-                        <span className="text-[8px] font-black uppercase tracking-widest text-white/70 mb-0.5">Dólares</span>
+                        <span className="text-[12px] font-black uppercase tracking-widest text-white/70 mb-0.5">Precio Ref</span>
                         <div className="flex flex-col">
                             {hasPromotion && (
-                                <span className="text-[9px] line-through text-white/50 decoration-white/30">
-                                    {formatMoney(oldPriceRef, "$")}
+                                <span className="text-[18px] line-through text-gray-200 decoration-red-500/90">
+                                    {formatMoney(oldPriceRef, "Ref")}
                                 </span>
                             )}
                             <div className="font-extrabold text-2xl md:text-3xl">
-                                {formatMoney(priceRef, "$")}
+                                {formatMoney(priceRef, "Ref")}
                             </div>
                         </div>
                         {hasPromotion && (
-                            <span className="text-[8px] font-bold text-white/70 mt-0.5">PRECIO REF PROM</span>
+                            <span className="text-[10px] font-bold text-white/70 mt-0.5">PRECIO REF PROM</span>
                         )}
                     </div>
+
                 </div>
 
                 {hasPromotion && (
-                    <div className="mb-4 flex items-center gap-1.5 text-emerald-600 font-bold bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100 w-fit text-xs">
-                        <span className="material-icons text-sm">trending_down</span>
-                        Ahorra: {formatMoney(product.promotion?.savings, "Bs")}
+                    <div className="flex flex-row gap-4 mb-4">
+                        <SavingsBadge value={product.promotion?.savings} currency="Bs" />
+                        <SavingsBadge value={product.promotion?.dolarSavings} currency="Ref" />
                     </div>
                 )}
 
@@ -136,35 +134,27 @@ export default function ProductView({ product, inputRef }: { product: Product, i
                             </span>
                         </div>
                     )}
-                    <div className="p-2 bg-slate-50 rounded-lg border border-slate-200 shadow-sm relative overflow-hidden group">
+                    {/* <div className="p-2 bg-slate-50 rounded-lg border border-slate-200 shadow-sm relative overflow-hidden group">
                         <div className="absolute top-0 right-0 w-3 h-3 bg-slate-200 rounded-bl-full"></div>
                         <span className="block text-[7px] font-black text-slate-500 uppercase tracking-tighter mb-0.5 relative z-10">IVA ({product.prices.tax}%)</span>
                         <span className="text-[10px] font-bold text-slate-800 leading-none truncate block relative z-10">
                             {formatMoney(hasPromotion ? product.promotion?.taxAmount : product.prices.taxAmount, "Bs")}
                         </span>
-                    </div>
-
-                    <div className="p-2 bg-slate-50 rounded-lg border border-slate-100">
-                        <span className="block text-[7px] font-black text-slate-400 uppercase tracking-tighter mb-0.5">Precio Ref</span>
-                        <span className="text-[10px] font-bold text-slate-700 leading-none truncate block">
-                            {formatMoney(priceRef, "$")}
-                        </span>
-                    </div>
-
+                    </div> */}
                 </div>
 
                 <div className="mt-auto pt-3 border-t border-slate-100 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div>
-                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mr-1">BCV:</span>
-                            <span className="text-[10px] font-bold text-slate-700">{formatMoney(product.rate?.dollar, "Bs")}</span>
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-1">Tasa BCV USD:</span>
+                            <span className="text-[12px] font-bold text-slate-700">{formatMoney(product.rate?.dollar, "Bs")}</span>
                         </div>
                         <div>
-                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mr-1">EUR:</span>
-                            <span className="text-[10px] font-bold text-slate-700">{formatMoney(product.rate?.euro, "Bs")}</span>
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-1">Tasa BCV EURO:</span>
+                            <span className="text-[12px] font-bold text-slate-700">{formatMoney(product.rate?.euro, "Bs")}</span>
                         </div>
                     </div>
-                    <div className="text-[9px] text-slate-400 font-medium">
+                    <div className="text-[11px] text-slate-400 font-medium">
                         {product.barCode}
                     </div>
                 </div>

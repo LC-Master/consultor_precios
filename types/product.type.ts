@@ -17,6 +17,7 @@ export type Product = null | {
     taxAmount?: number | null;
     priceWithTax: number | null | undefined;
     referencePrice: number | null | undefined;
+    dolarSavings: number | null | undefined;
     discountPercentage: number | null | undefined;
     savings: number | null | undefined;
   } | null;
