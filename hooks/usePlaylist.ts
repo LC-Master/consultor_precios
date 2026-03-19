@@ -10,7 +10,12 @@ export function usePlaylist() {
     const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const playlistPollIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const lastClientRefreshAtRef = useRef(0);
+    const isBootstrappingRef = useRef(false);
     const fetchWithAuth = useAuthenticatedFetch();
+    const configuredRetrySeconds = Number(process.env.NEXT_PUBLIC_CDS_RETRY_SECONDS);
+    const RETRY_DELAY_MS = Number.isFinite(configuredRetrySeconds) && configuredRetrySeconds > 0
+        ? configuredRetrySeconds * 1000
+        : 60_000;
 
     const eventUrl = useMemo(() => new URL(process.env.NEXT_PUBLIC_API_URL_CDS + "events"), []);
     const authUrl = useMemo(() => new URL(process.env.NEXT_PUBLIC_API_URL_CDS + "auth/login/device"), []);
@@ -124,13 +129,38 @@ export function usePlaylist() {
                     }
                 }
             } catch {
+                // Si CDS falla, limpiamos playlist para evitar mostrar ads cacheados
+                latestPlaylistRef.current = { campaigns: [] };
+                setPlaylist({ campaigns: [] });
                 return;
             }
         };
 
-        const initializeEventSource = () => {
-            if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
-            if (eventSourceRef.current) eventSourceRef.current.close();
+        function scheduleRetry(immediate = false) {
+            if (immediate) {
+                if (retryTimeoutRef.current) {
+                    clearTimeout(retryTimeoutRef.current);
+                    retryTimeoutRef.current = null;
+                }
+                void bootstrap();
+                return;
+            }
+            if (retryTimeoutRef.current) return;
+            retryTimeoutRef.current = setTimeout(() => {
+                retryTimeoutRef.current = null;
+                bootstrap();
+            }, RETRY_DELAY_MS);
+        }
+
+        function initializeEventSource() {
+            if (retryTimeoutRef.current) {
+                clearTimeout(retryTimeoutRef.current);
+                retryTimeoutRef.current = null;
+            }
+            if (eventSourceRef.current) {
+                eventSourceRef.current.close();
+                eventSourceRef.current = null;
+            }
 
             const event = new EventSource(eventUrl, {
                 withCredentials: true
@@ -150,11 +180,13 @@ export function usePlaylist() {
 
             event.onerror = async () => {
                 event.close();
-                retryTimeoutRef.current = setTimeout(() => {
-                    initializeEventSource();
-                }, 60000);
+                eventSourceRef.current = null;
+                // Limpia para no usar contenido cacheado si se pierde SSE/CDS
+                latestPlaylistRef.current = { campaigns: [] };
+                setPlaylist({ campaigns: [] });
+                scheduleRetry();
             };
-        };
+        }
 
         const handleClientRefresh = () => {
             const now = Date.now();
@@ -164,6 +196,8 @@ export function usePlaylist() {
         };
 
         const bootstrap = async () => {
+            if (isBootstrappingRef.current) return;
+            isBootstrappingRef.current = true;
             try {
                 await fetchWithAuth(authUrl, { credentials: "include" });
                 initializeEventSource();
@@ -174,11 +208,19 @@ export function usePlaylist() {
                     void fetchPlaylist();
                 }, PLAYLIST_POLL_MS);
             } catch {
-                retryTimeoutRef.current = setTimeout(bootstrap, 60000);
+                // Si CDS no responde, limpia playlist y agenda reintento
+                latestPlaylistRef.current = { campaigns: [] };
+                setPlaylist({ campaigns: [] });
+                scheduleRetry();
+            } finally {
+                isBootstrappingRef.current = false;
             }
         };
 
         window.addEventListener('playlist:client-refresh', handleClientRefresh);
+        const handleOnline = () => scheduleRetry(true);
+        window.addEventListener('online', handleOnline);
+        
         bootstrap();
 
         return () => {
@@ -188,6 +230,7 @@ export function usePlaylist() {
             if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
             if (playlistPollIntervalRef.current) clearInterval(playlistPollIntervalRef.current);
             window.removeEventListener('playlist:client-refresh', handleClientRefresh);
+            window.removeEventListener('online', handleOnline);
         };
     }, [authUrl, eventUrl, fetchWithAuth, mediaBaseUrl]);
 

@@ -21,6 +21,7 @@ export default function StandbyView({ playlist, isActive = true, videoOnly = fal
     const MIN_FAILED_MEDIA_COOLDOWN_MS = ms('60s');
     const MAX_FAILED_MEDIA_COOLDOWN_MS = ms('15m');
     const [allValidItems, setAllValidItems] = useState<MediaItem[]>([]);
+    const [isOffline, setIsOffline] = useState<boolean>(!globalThis?.navigator?.onLine);
     const [failedUntilByUrl, setFailedUntilByUrl] = useState<Record<string, number>>({});
     const failedUntilByUrlRef = useRef<Record<string, number>>({});
     const failureCountByUrlRef = useRef<Record<string, number>>({});
@@ -31,6 +32,17 @@ export default function StandbyView({ playlist, isActive = true, videoOnly = fal
     const videoRef = useRef<HTMLVideoElement>(null);
     const ambientCanvasRef = useRef<HTMLCanvasElement>(null);
     const retryTimeoutByUrlRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+
+    useEffect(() => {
+        const handleOnline = () => setIsOffline(false);
+        const handleOffline = () => setIsOffline(true);
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, []);
 
     // Independent indices for fluid decoupling
     const [mainIndex, setMainIndex] = useState(0);
@@ -183,11 +195,12 @@ export default function StandbyView({ playlist, isActive = true, videoOnly = fal
     }, [markMediaTemporarilyFailed]);
 
     const playableItems = useMemo(() => {
+        if (isOffline) return [];
         return allValidItems.filter(item => {
             const retryAt = failedUntilByUrl[item.url];
             return !retryAt || retryAt <= nowMs;
         });
-    }, [allValidItems, failedUntilByUrl, nowMs]);
+    }, [allValidItems, failedUntilByUrl, nowMs, isOffline]);
 
     // Separate content types for specific layout roles
     const videoItems = useMemo(() => playableItems.filter(i => isVideo(i.fileType)), [playableItems]);
@@ -379,7 +392,10 @@ export default function StandbyView({ playlist, isActive = true, videoOnly = fal
                         playsInline
                         onLoadedData={() => setIsMainVideoReady(true)}
                         onEnded={isSingleVideo ? undefined : handleNextMain}
-                        onError={() => handleMainMediaFailure(activeVideo, 'video-element')}
+                        onError={() => {
+                            handleMainMediaFailure(activeVideo, 'video-element');
+                            handleNextMain();
+                        }}
                     />
                     {!videoOnly && <InfoOverlay />}
                 </div>

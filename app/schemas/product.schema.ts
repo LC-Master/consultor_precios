@@ -6,8 +6,8 @@ export const productSchema = z.object({
         .transform((val) => Number(val))
         .pipe(
             z.number({ error: "Invalid CodArticulo" })
-            .int({ error: "CodArticulo must be an integer" })
-            .nonnegative({ error: "CodArticulo must be non-negative" })
+                .int({ error: "CodArticulo must be an integer" })
+                .nonnegative({ error: "CodArticulo must be non-negative" })
         )
         .describe("Article code of the product"),
     CodBarra: z
@@ -18,7 +18,7 @@ export const productSchema = z.object({
         })
         .pipe(
             z.number({ error: "Invalid CodBarra" })
-            .nonnegative({ error: "CodBarra must be non-negative" })
+                .nonnegative({ error: "CodBarra must be non-negative" })
         )
         .describe("Barcode of the product"),
     Bloqueado: z
@@ -89,6 +89,13 @@ export const productSchema = z.object({
         .nullable()
         .optional()
         .describe("Base price of the promotion"),
+    FechaValor: z.preprocess((val) => {
+        if (typeof val === "string") {
+            const [day, month, year] = val.split("/");
+            return new Date(`${year}-${month}-${day}`);
+        }
+        return val;
+    }, z.date({ error: "Invalid FechaValor" })),
     PorcDesc: z
         .number({ error: "Invalid PorcDesc" })
         .nonnegative({ error: "PorcDesc must be non-negative" })

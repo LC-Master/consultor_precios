@@ -23,6 +23,15 @@ export const envSchema = z.object(
       .nonoptional({ error: "NEXT_PUBLIC_TIME_ROTATE_IMAGE_S es obligatorio" })
       .describe("Tiempo en segundos para rotar las imágenes en el carrusel")
       .default(8),
+    NEXT_PUBLIC_CDS_RETRY_SECONDS: z.coerce
+      .number({
+        error: "NEXT_PUBLIC_CDS_RETRY_SECONDS debe ser un número",
+      })
+      .int({ message: "NEXT_PUBLIC_CDS_RETRY_SECONDS debe ser un número entero" })
+      .min(5, "NEXT_PUBLIC_CDS_RETRY_SECONDS debe ser al menos 5 segundos")
+      .max(300, "NEXT_PUBLIC_CDS_RETRY_SECONDS no puede ser mayor a 300 segundos")
+      .describe("Intervalo en segundos para reintentar reconexión con CDS/SSE")
+      .default(60),
     NEXT_PUBLIC_API_URL_CDS: z
       .url({ error: "NEXT_PUBLIC_API_URL_CDS debe ser una URL válida" })
       .min(1, "NEXT_PUBLIC_API_URL_CDS no puede estar vacío")

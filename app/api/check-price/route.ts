@@ -55,7 +55,6 @@ export async function GET(request: NextRequest) {
         const rawValue = Object.values(row)[0];
 
         const rawData = typeof rawValue === 'string' ? JSON.parse(rawValue) : rawValue;
-
         const parsedInfo = productSchema.safeParse(rawData);
 
         if (!parsedInfo.success) {
@@ -64,7 +63,6 @@ export async function GET(request: NextRequest) {
         }
 
         const product = parsedInfo.data as IProduct;
-
         const resultProcessed = await normalizeProduct(product);
 
         return NextResponse.json(resultProcessed, { status: 200 });

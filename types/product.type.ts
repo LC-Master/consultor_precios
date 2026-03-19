@@ -22,6 +22,7 @@ export type Product = null | {
     savings: number | null | undefined;
   } | null;
   rate: {
+    validDate?: Date;
     dollar?: number;
     euro?: number;
   };

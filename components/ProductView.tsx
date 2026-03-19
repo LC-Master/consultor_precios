@@ -144,14 +144,33 @@ export default function ProductView({ product, inputRef }: { product: Product, i
                 </div>
 
                 <div className="mt-auto pt-3 border-t border-slate-100 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div>
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-1">Tasa BCV USD:</span>
-                            <span className="text-[12px] font-bold text-slate-700">{formatMoney(product.rate?.dollar, "Bs")}</span>
-                        </div>
-                        <div>
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-1">Tasa BCV EURO:</span>
-                            <span className="text-[12px] font-bold text-slate-700">{formatMoney(product.rate?.euro, "Bs")}</span>
+                    <div className="flex justify-end mt-3">
+                        <div className="flex items-center gap-4 bg-slate-100/80 border border-slate-200 p-1.5 px-4 rounded-lg shadow-sm">
+
+                            {/* Tasa USD */}
+                            <div className="flex flex-col border-r border-slate-300 pr-4 last:border-0 last:pr-0">
+                                <span className="text-[8px] font-bold text-slate-500 uppercase tracking-tighter leading-tight">Tasa BCV USD</span>
+                                <span className="text-[13px] font-black text-slate-800 tabular-nums leading-none">
+                                    {formatMoney(product.rate?.dollar, "Bs")}
+                                </span>
+                            </div>
+
+                            {/* Tasa EURO */}
+                            <div className="flex flex-col border-r border-slate-300 pr-4 last:border-0 last:pr-0">
+                                <span className="text-[8px] font-bold text-slate-500 uppercase tracking-tighter leading-tight">Tasa BCV EURO</span>
+                                <span className="text-[13px] font-black text-slate-800 tabular-nums leading-none">
+                                    {formatMoney(product.rate?.euro, "Bs")}
+                                </span>
+                            </div>
+
+                            {/* Fecha Vigencia */}
+                            <div className="flex flex-col">
+                                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter leading-tight">Vence</span>
+                                <span className="text-[11px] font-bold text-slate-600 tabular-nums leading-none">
+                                    {product.rate?.validDate ? new Date(product.rate.validDate).toLocaleDateString() : 'N/A'}
+                                </span>
+                            </div>
+
                         </div>
                     </div>
                     <div className="text-[11px] text-slate-400 font-medium">

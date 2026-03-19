@@ -49,6 +49,7 @@ export const normalizeProduct = async (product: IProduct): Promise<Product> => {
             discountPercentage: product.PorcDesc,
         } : null,
         rate: {
+            validDate: product.FechaValor ? new Date(product.FechaValor) : undefined,
             dollar: product.Tasa,
             euro: product.TasaEuro,
         },

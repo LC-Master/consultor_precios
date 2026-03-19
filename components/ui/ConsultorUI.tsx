@@ -1,5 +1,6 @@
 ﻿'use client'
 
+import { useEffect, useState } from "react";
 import Loading from "@/components/ui/Loading";
 import ProductView from "@/components/ProductView";
 import ErrorView from "@/components/ErrorView";
@@ -11,6 +12,7 @@ import { IdleScreen } from "@/components/IdleScreen";
 
 export default function ConsultorUI() {
   const playlist = usePlaylist();
+  const [isOnline, setIsOnline] = useState<boolean>(typeof navigator !== "undefined" ? navigator.onLine : true);
   const { 
     code, 
     product, 
@@ -22,18 +24,32 @@ export default function ConsultorUI() {
     setError 
   } = useProductSearch();
 
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
   if (loading) return <Loading />;
 
-  // Determine if we are in "Standby" (Idle) mode:
-  // No active product result, no error message, no user typing (code is empty).
-  const isStandby = !product && !error && !code;
-  const hasContent = playlist && ((playlist.campaigns && playlist.campaigns.length > 0) || !!playlist.place_holder);
+  // Idle: sin producto ni error (aunque haya texto tipeado)
+  const isIdle = !product && !error;
+  // Mostrar Standby solo si hay contenido proveniente del CDS (campañas o placeholder remoto) y hay conectividad
+  const hasPlayableContent = !!(playlist?.campaigns?.length || playlist?.place_holder);
+  const showStandbyLayer = isIdle && hasPlayableContent && isOnline;
 
   return (
     <main className="relative h-full w-full bg-slate-50 overflow-hidden flex flex-col items-center justify-center p-4">
-      {/* Standby View (Ads) - Always mounted to preserve state, toggled via CSS/prop */}
-      <div className={`fixed inset-0 z-50 transition-opacity duration-500 ${isStandby && hasContent ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
-        <StandbyView playlist={playlist} isActive={isStandby && !!hasContent} />
+      {/* Standby View (Ads) - solo cuando hay contenido remoto (playlist o placeholder CDS) */}
+      <div className={`fixed inset-0 z-50 transition-opacity duration-500 ${showStandbyLayer ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+        <StandbyView playlist={playlist} isActive={showStandbyLayer} />
       </div>
 
       {/* Scanner Input - Active UI & Default Placeholder UI */}
@@ -44,8 +60,8 @@ export default function ConsultorUI() {
         onEnter={() => void handleSearch()}
       />
 
-      {/* Offline/Empty State Visuals - "Consulta Aquí" Modal */}
-      {!hasContent && (
+      {/* Pantalla de consulta cuando no hay contenido CDS o no estamos en standby */}
+      {!showStandbyLayer && (
         <IdleScreen hidden={!!product} />
       )}
 
