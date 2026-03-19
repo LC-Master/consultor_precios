@@ -34,9 +34,9 @@ export default function ProductView({ product, inputRef }: { product: Product, i
                     <Image
                         src={product.imageUrl || '/locatel.webp'}
                         alt={product.description || "Producto"}
-                        fill
+                        fill={true}
                         className="object-contain p-2 mix-blend-multiply transition-transform duration-500 hover:scale-105"
-                        priority
+                        priority={true}
                     />
                 </div>
             </div>

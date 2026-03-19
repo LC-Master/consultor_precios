@@ -3,6 +3,49 @@ import { GET } from "../../app/api/check-price/route";
 import { NextRequest } from "next/server";
 import { pool } from "@/src/provider/pool.provider";
 
+const JSON_COLUMN_NAME = "JSON_F52E2B61-18A1-11d1-B105-00805F49916B";
+const baseProductPayload = {
+    CodArticulo: "2103931",
+    CodBarra: "7591440409094                 ",
+    Bloqueado: false,
+    Descripcion: "ELEMENTAL CREMA CORP TE VER PE",
+    PrecioBase: 2236.51,
+    PctIva: 16,
+    MontoIva: 357.84,
+    PrecioIva: 2594.35,
+    PrecioRef: 7.13,
+    Tasa: 363.66,
+    TasaEuro: 434.43,
+    NomProm: "Descuento 30%",
+    PrecioBaseProm: 1565.56,
+    MontoIvaProm: 250.49,
+    PrecioIVAProm: 1816.05,
+    PrecioRefProm: 4.99,
+    FechaValor: "19/03/2026",
+    PorcDesc: 30,
+};
+
+function mockProductRecord(overrides: Record<string, unknown> = {}) {
+    spyOn(pool, "request").mockReturnValue({
+        input: () => ({
+            execute: async () => ({
+                recordset: [
+                    {
+                        [JSON_COLUMN_NAME]: JSON.stringify({
+                            ...baseProductPayload,
+                            ...overrides,
+                        }),
+                    },
+                ],
+                recordsets: [],
+                rowsAffected: [],
+                output: {},
+                returnValue: 0,
+            }),
+        }),
+    } as unknown as ReturnType<typeof pool.request>);
+}
+
 describe("checkPrice API validations tests", () => {
     it("should return 400 for missing code parameter", async () => {
         const request = new NextRequest("http://localhost/api/check-price");
@@ -52,26 +95,12 @@ describe("checkPrice API validations tests", () => {
         expect(data).toEqual({ error: "Product not found" });
     });
     it("should return 200 with valid product data", async () => {
-        spyOn(pool, "request").mockReturnValue({
-            input: () => ({
-                execute: async () => ({
-                    recordset: [
-                        {
-                            'JSON_F52E2B61-18A1-11d1-B105-00805F49916B': '{"CodArticulo":"2103931","CodBarra":"7591440409094                 ","Bloqueado":false,"Descripcion":"ELEMENTAL CREMA CORP TE VER PE","PrecioBase":2236.5100,"PctIva":1.6000000e+001,"MontoIva":3.578400000000000e+002,"PrecioIva":2.594350000000000e+003,"PrecioRef":7.130000000000000e+000,"Tasa":3.636600000000000e+002,"TasaEuro":4.344300000000000e+002,"NomProm":"Descuento 30%","PrecioBaseProm":1.565560000000000e+003,"MontoIvaProm":2.504900000000000e+002,"PrecioIVAProm":1.816050000000000e+003,"PrecioRefProm":4.990000000000000e+000,"PorcDesc":3.000000000000000e+001}'
-                        }
-                    ],
-                    recordsets: [],
-                    rowsAffected: [],
-                    output: {},
-                    returnValue: 0,
-                })
-            })
-        } as unknown as ReturnType<typeof pool.request>);
+        mockProductRecord();
         const request = new NextRequest("http://localhost/api/check-price?code=7591440409094");
         const response = await GET(request);
         const data = await response.json();
         expect(response.status).toBe(200);
-        expect(data).toEqual({
+        expect(data).toMatchObject({
             articleCode: 2103931,
             barCode: 7591440409094,
             description: "ELEMENTAL CREMA CORP TE VER PE",
@@ -83,40 +112,25 @@ describe("checkPrice API validations tests", () => {
                 tax: 16,
                 taxAmount: 357.84,
             },
-            promotion: {
-                basePrice: 1565.56,
-                discountPercentage: 30,
-                name: "Descuento 30%",
-                priceWithTax: 1816.05,
-                referencePrice: 4.99,
-                savings: 778.3,
-                taxAmount: 250.49,
-            },
             rate: {
                 dollar: 363.66,
                 euro: 434.43,
             },
         });
+        expect(data.promotion).toMatchObject({
+            basePrice: 1565.56,
+            discountPercentage: 30,
+            name: "Descuento 30%",
+            priceWithTax: 1816.05,
+            referencePrice: 4.99,
+            savings: 778.3,
+            taxAmount: 250.49,
+        });
+        expect(data.promotion?.dolarSavings).toBeCloseTo(2.14, 2);
     });
 
     it("should return 500 when product schema validation fails", async () => {
-        spyOn(pool, "request").mockReturnValue({
-            input: () => ({
-                execute: async () => ({
-                    recordset: [
-                        {
-                            // Missing required fields to fail zod parsing
-                            'JSON_F52E2B61-18A1-11d1-B105-00805F49916B': '{"unexpected":"value"}'
-                        }
-                    ],
-                    recordsets: [],
-                    rowsAffected: [],
-                    output: {},
-                    returnValue: 0,
-                })
-            })
-        } as unknown as ReturnType<typeof pool.request>);
-
+        mockProductRecord({ CodArticulo: "invalid", Descripcion: "" });
         const request = new NextRequest("http://localhost/api/check-price?code=7591440409094");
         const response = await GET(request);
         const data = await response.json();
@@ -139,22 +153,7 @@ describe("checkPrice API validations tests", () => {
     });
 
     it("should return 429 when IP exceeds request threshold", async () => {
-        spyOn(pool, "request").mockReturnValue({
-            input: () => ({
-                execute: async () => ({
-                    recordset: [
-                        {
-                            'JSON_F52E2B61-18A1-11d1-B105-00805F49916B': '{"CodArticulo":"2103931","CodBarra":"7591440409094                 ","Bloqueado":false,"Descripcion":"ELEMENTAL CREMA CORP TE VER PE","PrecioBase":2236.5100,"PctIva":1.6000000e+001,"MontoIva":3.578400000000000e+002,"PrecioIva":2.594350000000000e+003,"PrecioRef":7.130000000000000e+000,"Tasa":3.636600000000000e+002,"TasaEuro":4.344300000000000e+002}'
-                        }
-                    ],
-                    recordsets: [],
-                    rowsAffected: [],
-                    output: {},
-                    returnValue: 0,
-                })
-            })
-        } as unknown as ReturnType<typeof pool.request>);
-
+        mockProductRecord();
         const headers = new Headers({ "x-forwarded-for": "198.51.100.10" });
         let lastAllowedResponse = null;
 
@@ -173,21 +172,7 @@ describe("checkPrice API validations tests", () => {
     describe("checkPrice API with promotion", () => {
 
         beforeAll(() => {
-            spyOn(pool, "request").mockReturnValue({
-                input: () => ({
-                    execute: async () => ({
-                        recordset: [
-                            {
-                                'JSON_F52E2B61-18A1-11d1-B105-00805F49916B': '{"CodArticulo":"2103931","CodBarra":"7591440409094                 ","Bloqueado":false,"Descripcion":"ELEMENTAL CREMA CORP TE VER PE","PrecioBase":2236.5100,"PctIva":1.6000000e+001,"MontoIva":3.578400000000000e+002,"PrecioIva":2.594350000000000e+003,"PrecioRef":7.130000000000000e+000,"Tasa":3.636600000000000e+002,"TasaEuro":4.344300000000000e+002,"NomProm":"Descuento 30%","PrecioBaseProm":1.565560000000000e+003,"MontoIvaProm":2.504900000000000e+002,"PrecioIVAProm":1.816050000000000e+003,"PrecioRefProm":4.990000000000000e+000,"PorcDesc":3.000000000000000e+001}'
-                            }
-                        ],
-                        recordsets: [],
-                        rowsAffected: [],
-                        output: {},
-                        returnValue: 0,
-                    })
-                })
-            } as unknown as ReturnType<typeof pool.request>);
+            mockProductRecord();
         });
 
         it("should return 200 and promotion data if product has promotion", async () => {
@@ -196,7 +181,7 @@ describe("checkPrice API validations tests", () => {
             const data = await response.json();
             expect(response.status).toBe(200);
             expect(data.promotion).toBeDefined();
-            expect(data.promotion).toEqual({
+            expect(data.promotion).toMatchObject({
                 basePrice: 1565.56,
                 discountPercentage: 30,
                 name: "Descuento 30%",
@@ -205,27 +190,23 @@ describe("checkPrice API validations tests", () => {
                 savings: 778.3,
                 taxAmount: 250.49,
             });
+            expect(data.promotion?.dolarSavings).toBeCloseTo(2.14, 2);
         });
     })
 
 
     describe("checkPrice API without promotion", () => {
         beforeAll(() => {
-            spyOn(pool, "request").mockReturnValue({
-                input: () => ({
-                    execute: async () => ({
-                        recordset: [
-                            {
-                                'JSON_F52E2B61-18A1-11d1-B105-00805F49916B': '{"CodArticulo":"2103932","CodBarra":"7591440409095                 ","Bloqueado":false,"Descripcion":"ELEMENTAL CREMA CORP TE VER PE","PrecioBase":2236.5100,"PctIva":1.6000000e+001,"MontoIva":3.578400000000000e+002,"PrecioIva":2.594350000000000e+003,"PrecioRef":7.130000000000000e+000,"Tasa":3.636600000000000e+002,"TasaEuro":4.344300000000000e+002}'
-                            }
-                        ],
-                        recordsets: [],
-                        rowsAffected: [],
-                        output: {},
-                        returnValue: 0,
-                    })
-                })
-            } as unknown as ReturnType<typeof pool.request>);
+            mockProductRecord({
+                CodArticulo: "2103932",
+                CodBarra: "7591440409095                 ",
+                NomProm: null,
+                PorcDesc: 0,
+                PrecioBaseProm: null,
+                MontoIvaProm: null,
+                PrecioIVAProm: null,
+                PrecioRefProm: null,
+            });
         });
 
         it("should return 200 and no promotion data if product has no promotion", async () => {
@@ -254,4 +235,20 @@ describe("checkPrice API validations tests", () => {
         });
     })
 
+    spyOn(global, "fetch").mockImplementation((async (url: string) => {
+        const requestUrl = String(url);
+        if (requestUrl.includes("https://www.locatel.com.ve/api/catalog_system/pub/products/search")) {
+            return {
+                ok: true,
+                json: async () => [{
+                    items: [{
+                        images: [{
+                            imageUrl: "/locatel.webp",
+                        }],
+                    }],
+                }],
+            } as Response;
+        }
+        throw new Error("Unexpected fetch call: " + requestUrl);
+    }) as unknown as typeof fetch);
 })

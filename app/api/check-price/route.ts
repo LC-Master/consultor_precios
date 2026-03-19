@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
     const clientIp = getClientIp(request);
 
     if (isRateLimited(clientIp, RATE_LIMIT_MAX_REQUESTS, RATE_LIMIT_WINDOW_MS)) {
+        logger.warn({ message: "Rate limit exceeded", clientIp });
         return NextResponse.json(
             { error: "Too many requests. Please try again later." },
             {
@@ -38,32 +39,46 @@ export async function GET(request: NextRequest) {
     }
 
     const code = request.nextUrl.searchParams.get("code");
+    logger.info({ message: "Received request", code });
+
     const parsedCode = codeSchema.safeParse(code);
     if (!parsedCode.success) {
+        logger.error({ message: "Code validation failed", code, errors: parsedCode.error.issues });
         return NextResponse.json({ error: "Invalid code parameter" }, { status: 400 });
     }
 
     try {
+        logger.info({ message: "Executing stored procedure", code: parsedCode.data });
         const result = await pool.request()
             .input('sCo_Art', sql.NVarChar, parsedCode.data)
             .execute('[dbo].spConsultaPrecioJson');
+
         const row = result.recordset[0];
         if (!row) {
+            logger.warn({ message: "Product not found", code: parsedCode.data });
             return NextResponse.json({ error: "Product not found" }, { status: 404 });
         }
 
         const rawValue = Object.values(row)[0];
+        logger.info({ message: "Raw database response", rawValue });
 
         const rawData = typeof rawValue === 'string' ? JSON.parse(rawValue) : rawValue;
         const parsedInfo = productSchema.safeParse(rawData);
 
         if (!parsedInfo.success) {
-            logger.error({ message: "Zod Validation Error", errors: parsedInfo.error.issues });
+            logger.error({
+                message: "Product schema validation failed",
+                rawData,
+                validationErrors: parsedInfo.error.issues, 
+            });
             return NextResponse.json({ error: "Invalid product data structure" }, { status: 500 });
         }
 
         const product = parsedInfo.data as IProduct;
+        logger.info({ message: "Product schema validation succeeded", product });
+
         const resultProcessed = await normalizeProduct(product);
+        logger.info({ message: "Normalized product data", resultProcessed });
 
         return NextResponse.json(resultProcessed, { status: 200 });
 
@@ -71,7 +86,7 @@ export async function GET(request: NextRequest) {
         if (error instanceof Error) {
             logger.error({ message: "Server Error", error: error.message });
         } else {
-            logger.error({ message: "Server Error", error });
+            logger.error({ message: "Unknown Server Error", error });
         }
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }

@@ -27,6 +27,7 @@ describe("ProductView", () => {
             articleCode: 1010,
             barCode: 1234567890123,
             description: "Vitaminas A-Z",
+            imageUrl: null,
             isBlocked: false,
             prices: {
                 base: 10,
@@ -46,13 +47,16 @@ describe("ProductView", () => {
 
         expect(screen.queryByText("Regular")).toBeNull();
         expect(screen.queryByText("PRECIO REF PROM")).toBeNull();
-        expect(screen.getAllByText("1,60 Bs").length).toBeGreaterThan(0);
-        expect(screen.getAllByText("3,50 $").length).toBeGreaterThan(0);
+        expect(
+            screen.getByText((content) => content.includes("IVA 16%:") && content.includes("1,60 Bs"))
+        ).toBeDefined();
+        expect(screen.getByText("3,50 Ref")).toBeDefined();
     });
 
     it("should highlight promotion details when available", () => {
         const product: Product = {
             articleCode: 2020,
+            imageUrl: "https://example.com/product.jpg",
             barCode: 9876543210123,
             description: "Crema Facial Premium",
             isBlocked: false,
@@ -68,6 +72,7 @@ describe("ProductView", () => {
                 basePrice: 18,
                 priceWithTax: 20,
                 referencePrice: 6,
+                dolarSavings: 0.5,
                 discountPercentage: 30,
                 savings: 9,
                 taxAmount: 2,
@@ -83,7 +88,7 @@ describe("ProductView", () => {
         expect(screen.getByText("Descuento Especial")).toBeDefined();
         expect(screen.getByText("-30%")).toBeDefined();
         expect(screen.getByText("PRECIO REF PROM")).toBeDefined();
-        expect(screen.getByText((content) => content.includes("Ahorra"))).toBeDefined();
+        expect(screen.getByText("Ahorra: 9,00 Bs")).toBeDefined();
     });
 
     it("should handle invalid price values gracefully", () => {
@@ -92,6 +97,7 @@ describe("ProductView", () => {
             barCode: 1112223334445,
             description: "Producto sin precios",
             isBlocked: false,
+            imageUrl: null,
             prices: {
                 base: 0,
                 tax: 16,
@@ -106,6 +112,7 @@ describe("ProductView", () => {
                 referencePrice: null,
                 discountPercentage: null,
                 savings: null,
+                dolarSavings: null,
                 taxAmount: null,
             },
             rate: {
