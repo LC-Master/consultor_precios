@@ -13,7 +13,7 @@ export const envSchema = z.object(
       .nonoptional({ error: "NEXT_PUBLIC_TIMEOUT_SECONDS es obligatorio" })
       .describe("Tiempo de espera en segundos para las solicitudes del cliente")
       .default(25),
-      NEXT_PUBLIC_TIME_ROTATE_IMAGE_S: z.coerce
+    NEXT_PUBLIC_TIME_ROTATE_IMAGE_S: z.coerce
       .number({
         error: "NEXT_PUBLIC_TIME_ROTATE_IMAGE_S debe ser un número",
       })
