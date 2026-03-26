@@ -9,23 +9,22 @@ export async function GET(
     const { slug } = await context.params;
 
     try {
-        const fs = await import('fs/promises');
-        const { existsSync } = await import('fs');
-        const path = await import('path');
-
-        const root = process.cwd();
-        const folder = ['storage', 'webp'].join(path.sep);
+        const fs = require('fs');
+        const path = require('path');
+        const fsPromises = require('fs').promises;
+        const getRoot = () => process.cwd();
+        const storageFolder = ['storage', 'webp'].join(path.sep);
         const fileName = `${slug.split('.')[0]}.webp`;
-        const filePath = path.join(root, folder, fileName);
 
-        if (existsSync(filePath)) {
-            const imageBuffer = await fs.readFile(filePath);
+        const filePath = [getRoot(), storageFolder, fileName].join(path.sep);
+
+        if (fs.existsSync(filePath)) {
+            const imageBuffer = await fsPromises.readFile(filePath);
 
             return new NextResponse(imageBuffer, {
                 headers: {
                     'Content-Type': 'image/webp',
                     'Cache-Control': 'public, max-age=31536000, immutable',
-                    'X-Content-Type-Options': 'nosniff'
                 },
             });
         }
