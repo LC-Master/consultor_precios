@@ -13,24 +13,11 @@ import { Product } from "@/types/product.type";
  */
 export const normalizeProduct = async (product: IProduct): Promise<Product> => {
     const hasPromotion = !!(product.NomProm && product.PorcDesc && product.PorcDesc > 0);
-    let imageUrl: string | null = null;
-    try {
-        const res = await fetch(`https://www.locatel.com.ve/api/catalog_system/pub/products/search?fq=skuId:${product.CodArticulo}`);
-        const data = await res.json();
-        const imageUrlBase = new URL(data[0].items[0].images[0].imageUrl);
-        imageUrlBase.searchParams.delete("v")
-        imageUrl = imageUrlBase.toString();
-    } catch (error) {
-        imageUrl = '/locatel.webp';
-
-    }
-
     return {
         isBlocked: product.Bloqueado,
         barCode: product.CodBarra,
         articleCode: product.CodArticulo,
         description: product.Descripcion,
-        imageUrl,
         prices: {
             base: product.PrecioBase,
             tax: product.PctIva,

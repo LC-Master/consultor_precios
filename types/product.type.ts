@@ -1,7 +1,6 @@
 export type Product = null | {
   isBlocked: boolean;
   barCode: number;
-  imageUrl: string | null;
   articleCode: number;
   description: string;
   prices: {

@@ -60,7 +60,6 @@ export async function GET(request: NextRequest) {
         }
 
         const rawValue = Object.values(row)[0];
-        logger.info({ message: "Raw database response", rawValue });
 
         const rawData = typeof rawValue === 'string' ? JSON.parse(rawValue) : rawValue;
         const parsedInfo = productSchema.safeParse(rawData);
@@ -69,16 +68,14 @@ export async function GET(request: NextRequest) {
             logger.error({
                 message: "Product schema validation failed",
                 rawData,
-                validationErrors: parsedInfo.error.issues, 
+                validationErrors: parsedInfo.error.issues,
             });
             return NextResponse.json({ error: "Invalid product data structure" }, { status: 500 });
         }
 
         const product = parsedInfo.data as IProduct;
-        logger.info({ message: "Product schema validation succeeded", product });
 
         const resultProcessed = await normalizeProduct(product);
-        logger.info({ message: "Normalized product data", resultProcessed });
 
         return NextResponse.json(resultProcessed, { status: 200 });
 

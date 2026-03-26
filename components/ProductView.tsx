@@ -1,6 +1,7 @@
 ﻿import { formatMoney } from "@/lib/formatMoney";
 import { Product } from "@/types/product.type";
 import Image from "next/image";
+import { useState } from "react";
 import SavingsBadge from "./SavingsBadge";
 
 export default function ProductView({ product, inputRef }: { product: Product, inputRef: React.RefObject<HTMLInputElement | null> }) {
@@ -20,6 +21,9 @@ export default function ProductView({ product, inputRef }: { product: Product, i
     // Ensure we handle oldPriceRef properly, falling back to base referencePrice if null
     const oldPriceRef = product.prices.referencePrice;
 
+    // image source with fallback on error
+    const [imgSrc, setImgSrc] = useState(`/api/images/${product.articleCode}.webp`);
+
     return (
         <div
             className="w-full max-w-[95vw] md:max-w-8xl bg-white rounded-2xl shadow-2xl shadow-slate-200 overflow-hidden flex flex-col md:flex-row max-h-[88vh] border border-slate-100 grow hover:scale-105 transition-transform duration-500"
@@ -32,8 +36,9 @@ export default function ProductView({ product, inputRef }: { product: Product, i
                 <div className="absolute inset-0 bg-locatel-medio/5"></div>
                 <div className="relative w-full h-full p-6 flex items-center justify-center">
                     <Image
-                        src={product.imageUrl || '/locatel.webp'}
+                        src={imgSrc}
                         alt={product.description || "Producto"}
+                        onError={() => setImgSrc('/locatel.webp')}
                         fill={true}
                         className="object-contain p-2 mix-blend-multiply transition-transform duration-500 hover:scale-105"
                         priority={true}
