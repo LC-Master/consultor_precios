@@ -3,6 +3,16 @@ import path from 'path';
 import fs from 'fs/promises';
 import { existsSync } from 'fs';
 
+// Función para evitar que Turbopack rastree la carpeta durante el build, a bueno ps
+function getImagePath(slug: string) {
+    const root = process.cwd();
+    const p1 = 'stor';
+    const p2 = 'age';
+    const p3 = 'we';
+    const p4 = 'bp';
+    return path.join(root, p1 + p2, p3 + p4, `${slug.split('.')[0]}.webp`);
+}
+
 export async function GET(
     request: NextRequest,
     context: { params: Promise<{ slug: string }> }
@@ -10,12 +20,7 @@ export async function GET(
     const { slug } = await context.params;
 
     try {
-        const rootDirectory = process.cwd();
-        const folderRelativePath = path.join('storage', 'webp');
-        const storagePath = path.join(rootDirectory, folderRelativePath);
-
-        const fileName = slug.split('.')[0];
-        const filePath = path.join(storagePath, `${fileName}.webp`);
+        const filePath = getImagePath(slug);
 
         if (existsSync(filePath)) {
             const imageBuffer = await fs.readFile(filePath);
@@ -28,10 +33,8 @@ export async function GET(
             });
         }
 
-        return new NextResponse('Imagen no encontrada', { status: 404 });
-
+        return new NextResponse('Not Found', { status: 404 });
     } catch (error) {
-        console.error('Error en API de imágenes:', error);
-        return new NextResponse('Error interno del servidor', { status: 500 });
+        return new NextResponse('Error', { status: 500 });
     }
 }
