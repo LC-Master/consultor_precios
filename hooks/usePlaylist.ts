@@ -1,9 +1,11 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
-import { PlaylistData, ApiPlaylistRoot} from "@/types/index.type";
+import { useState, useRef, useEffect } from 'react';
+import { PlaylistData, ApiPlaylistRoot } from "@/types/index.type";
 import { useAuthenticatedFetch } from './useAuthenticatedFetch';
 import { deepEqual } from '@/lib/deepEqual';
+import useAppStore from '../store/useAppStore';
 
 export function usePlaylist() {
+    const { config, isConfigLoaded, configError } = useAppStore()
     const [playlist, setPlaylist] = useState<PlaylistData>({ campaigns: [] });
     const latestPlaylistRef = useRef<PlaylistData>({ campaigns: [] });
     const eventSourceRef = useRef<EventSource | null>(null);
@@ -12,22 +14,24 @@ export function usePlaylist() {
     const lastClientRefreshAtRef = useRef(0);
     const isBootstrappingRef = useRef(false);
     const fetchWithAuth = useAuthenticatedFetch();
-    const configuredRetrySeconds = Number(process.env.NEXT_PUBLIC_CDS_RETRY_SECONDS);
+    const configuredRetrySeconds = Number(config.CDS_RETRY_SECONDS);
     const RETRY_DELAY_MS = Number.isFinite(configuredRetrySeconds) && configuredRetrySeconds > 0
         ? configuredRetrySeconds * 1000
         : 60_000;
 
-    const eventUrl = useMemo(() => new URL(process.env.NEXT_PUBLIC_API_URL_CDS + "events"), []);
-    const authUrl = useMemo(() => new URL(process.env.NEXT_PUBLIC_API_URL_CDS + "auth/login/device"), []);
-    const mediaBaseUrl = useMemo(() => new URL("media/", process.env.NEXT_PUBLIC_API_URL_CDS).toString(), []);
-
     useEffect(() => {
+        if (!isConfigLoaded || configError) return;
+
+        const eventUrl = new URL("events", config.API_URL_CDS);
+        const authUrl = new URL("auth/login/device", config.API_URL_CDS);
+        const mediaBaseUrl = new URL("media/", config.API_URL_CDS).toString();
+
         const PLAYLIST_POLL_MS = 5 * 60 * 1000;
         const CLIENT_REFRESH_THROTTLE_MS = 90 * 1000;
 
         const fetchPlaylist = async () => {
             try {
-                const resp = await fetchWithAuth<ApiPlaylistRoot>(new URL(process.env.NEXT_PUBLIC_API_URL_CDS + "playlist"));
+                const resp = await fetchWithAuth<ApiPlaylistRoot>(new URL(config.API_URL_CDS + "playlist"));
 
                 if (resp) {
                     const normalizeFileType = (fileType?: string, fallback = 'jpg') => {
@@ -220,7 +224,7 @@ export function usePlaylist() {
         window.addEventListener('playlist:client-refresh', handleClientRefresh);
         const handleOnline = () => scheduleRetry(true);
         window.addEventListener('online', handleOnline);
-        
+
         bootstrap();
 
         return () => {
@@ -232,7 +236,7 @@ export function usePlaylist() {
             window.removeEventListener('playlist:client-refresh', handleClientRefresh);
             window.removeEventListener('online', handleOnline);
         };
-    }, [authUrl, eventUrl, fetchWithAuth, mediaBaseUrl]);
+    }, [fetchWithAuth, isConfigLoaded, config.API_URL_CDS, configError, RETRY_DELAY_MS]);
 
     return playlist;
 }

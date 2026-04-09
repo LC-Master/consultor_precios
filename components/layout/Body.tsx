@@ -4,6 +4,8 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { SerwistProvider } from "@serwist/next/react";
 import { Geist, Geist_Mono } from "next/font/google";
+import { useEffect } from "react";
+import useAppStore from "@/store/useAppStore";
 
 const geistSans = Geist({
     variable: "--font-geist-sans",
@@ -16,6 +18,10 @@ const geistMono = Geist_Mono({
 });
 
 export default function Body({ children }: { children: React.ReactNode }) {
+    useEffect(() => {
+        void useAppStore.getState().loadFromEnv();
+    }, []);
+
     return (
         <body
             className={`${geistSans.variable} ${geistMono.variable} bg-slate-100 antialiased min-h-screen flex flex-col overflow-hidden`}

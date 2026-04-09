@@ -8,14 +8,16 @@ import ms from 'ms';
 import { isVideo } from '@/lib/isVideo';
 import FallBackPost from './ui/FallBackPost';
 import PosImageCarousel from './ui/PosImageCarousel';
+import useAppStore from '@/store/useAppStore';
 
 export default function StandbyView({ playlist, isActive = true, videoOnly = false }: StandbyViewProps) {
-    const configuredCooldownSeconds = Number(process.env.NEXT_PUBLIC_FAILED_MEDIA_COOLDOWN_S);
+    const config = useAppStore((s) => s.config);
+    const configuredCooldownSeconds = Number(config.FAILED_MEDIA_COOLDOWN_S);
     const FAILED_MEDIA_COOLDOWN_MS = Number.isFinite(configuredCooldownSeconds) && configuredCooldownSeconds > 0
         ? configuredCooldownSeconds * 1000
         : ms('5s');
-    const MEDIA_ROTATE_IMAGE_S = Number.isFinite(Number(process.env.NEXT_PUBLIC_TIME_ROTATE_IMAGE_S)) && Number(process.env.NEXT_PUBLIC_TIME_ROTATE_IMAGE_S) > 0
-        ? Number(process.env.NEXT_PUBLIC_TIME_ROTATE_IMAGE_S) * 1000
+    const MEDIA_ROTATE_IMAGE_S = Number.isFinite(Number(config.TIME_ROTATE_IMAGE_S)) && Number(config.TIME_ROTATE_IMAGE_S) > 0
+        ? Number(config.TIME_ROTATE_IMAGE_S) * 1000
         : ms('8s');
     const CLIENT_REFRESH_THROTTLE_MS = ms('90s');
     const MIN_FAILED_MEDIA_COOLDOWN_MS = ms('60s');

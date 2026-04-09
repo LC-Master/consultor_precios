@@ -4,7 +4,6 @@ import Body from "@/components/layout/Body";
 const APP_TITLE = "Consultor de Precios Locatel";
 const APP_DESCRIPTION = "Aplicación de consulta de precios para Locatel";
 
-
 export const metadata: Metadata = {
   applicationName: "Consultor de Precios Locatel",
   title: {
@@ -26,7 +25,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-        <Body>{children}</Body>
+      <Body>{children}</Body>
     </html>
   );
 }

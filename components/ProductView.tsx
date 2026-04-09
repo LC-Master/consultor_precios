@@ -26,7 +26,7 @@ export default function ProductView({ product, inputRef }: { product: Product, i
 
     return (
         <div
-            className="w-full max-w-[95vw] md:max-w-8xl bg-white rounded-2xl shadow-2xl shadow-slate-200 overflow-hidden flex flex-col md:flex-row max-h-[88vh] border border-slate-100 grow hover:scale-105 transition-transform duration-500"
+            className="w-full max-w-[95vw] md:max-w-8xl bg-white rounded-2xl shadow-2xl shadow-slate-200 overflow-hidden flex flex-col md:flex-row max-h-[92vh] border border-slate-100 grow hover:scale-105 transition-transform duration-500"
             onClick={(e) => {
                 e.stopPropagation();
                 inputRef?.current?.focus();

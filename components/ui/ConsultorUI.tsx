@@ -9,8 +9,12 @@ import { usePlaylist } from "@/hooks/usePlaylist";
 import { useProductSearch } from "@/hooks/useProductSearch";
 import { ScannerInput } from "@/components/ScannerInput";
 import { IdleScreen } from "@/components/IdleScreen";
+import useAppStore from "@/store/useAppStore";
 
 export default function ConsultorUI() {
+  const isConfigLoaded = useAppStore((s) => s.isConfigLoaded);
+  const isConfigLoading = useAppStore((s) => s.isConfigLoading);
+  const configError = useAppStore((s) => s.configError);
   const playlist = usePlaylist();
   const [isOnline, setIsOnline] = useState<boolean>(typeof navigator !== "undefined" ? navigator.onLine : true);
   const { 
@@ -37,6 +41,8 @@ export default function ConsultorUI() {
     };
   }, []);
 
+  if (!isConfigLoaded && isConfigLoading) return <Loading />;
+
   if (loading) return <Loading />;
 
   // Idle: sin producto ni error (aunque haya texto tipeado)
@@ -47,6 +53,12 @@ export default function ConsultorUI() {
 
   return (
     <main className="relative h-full w-full bg-slate-50 overflow-hidden flex flex-col items-center justify-center p-4">
+      {configError && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-70 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-amber-800 text-sm shadow-md">
+          No se pudo cargar configuracion remota. El sistema sigue operativo con capacidades limitadas.
+        </div>
+      )}
+
       {/* Standby View (Ads) - solo cuando hay contenido remoto (playlist o placeholder CDS) */}
       <div className={`fixed inset-0 z-50 transition-opacity duration-500 ${showStandbyLayer ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
         <StandbyView playlist={playlist} isActive={showStandbyLayer} />

@@ -1,10 +1,20 @@
-import { useState, useRef, useEffect, ChangeEvent } from 'react';
+import { useState, useRef, useEffect, ChangeEvent, useMemo } from 'react';
 import ms from "ms";
 import type { Product } from "@/types/product.type";
 import getProduct from "@/lib/getProduct";
+import useAppStore from '@/store/useAppStore';
 
 export function useProductSearch() {
-  const TIMEOUT_MS = ms(`${process.env.NEXT_PUBLIC_TIMEOUT_SECONDS}s` || "25s");
+  const { config } = useAppStore();
+  const TIMEOUT_MS = useMemo(() => {
+    const timeout = Number(config.TIMEOUT_SECONDS);
+
+    if (!Number.isFinite(timeout) || timeout <= 0) {
+      return ms("25s");
+    }
+
+    return timeout * 1000;
+  }, [config.TIMEOUT_SECONDS]);
 
   const [code, setCode] = useState("");
   const [product, setProduct] = useState<Product | null>(null);
