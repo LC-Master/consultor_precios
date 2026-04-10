@@ -3,6 +3,9 @@ import z from "zod";
 
 export const envSchema = z.object(
   {
+    API_URL_CDS_FRONT: z
+      .url({ error: "API_URL_CDS_FRONT debe ser una URL válida" })
+      .min(1, "API_URL_CDS_FRONT no puede estar vacío"),
     TIMEOUT_SECONDS: z.coerce
       .number({
         error: "TIMEOUT_SECONDS debe ser un número",

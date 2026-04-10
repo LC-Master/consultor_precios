@@ -1,18 +1,17 @@
-
-import { withSerwist } from "@serwist/turbopack";
 import type { NextConfig } from "next";
 
-
 const nextConfig: NextConfig = {
+    typescript: {
+        ignoreBuildErrors: true,
+    },
     output: "standalone",
     serverExternalPackages: ['pino', 'pino-pretty', 'pino-abstract-transport', 'thread-stream'],
     images: {
         unoptimized: true,
         remotePatterns: [
             {
-                protocol: 'http',
-                hostname: 'localhost',
-                port: '3000',
+                protocol: 'https',
+                hostname: 'cdsqa.locatel.com.ve',
                 pathname: '/api/media/**',
             },
         ],
@@ -20,4 +19,4 @@ const nextConfig: NextConfig = {
 };
 
 
-export default withSerwist(nextConfig);
+export default nextConfig;

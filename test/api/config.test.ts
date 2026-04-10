@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { GET } from '../../app/api/config/route';
 
 type ConfigKey =
+  | 'API_URL_CDS_FRONT'
   | 'TIMEOUT_SECONDS'
   | 'TIME_ROTATE_IMAGE_S'
   | 'FAILED_MEDIA_COOLDOWN_S'
@@ -9,6 +10,7 @@ type ConfigKey =
   | 'API_URL_CDS';
 
 const configKeys: ConfigKey[] = [
+  'API_URL_CDS_FRONT',
   'TIMEOUT_SECONDS',
   'TIME_ROTATE_IMAGE_S',
   'FAILED_MEDIA_COOLDOWN_S',
@@ -48,6 +50,7 @@ describe('Config API', () => {
   });
 
   it('should return runtime config from server env', async () => {
+    process.env.API_URL_CDS_FRONT = 'http://localhost:3001/frontend-api/';
     process.env.TIMEOUT_SECONDS = '10';
     process.env.TIME_ROTATE_IMAGE_S = '15';
     process.env.FAILED_MEDIA_COOLDOWN_S = '20';
@@ -59,6 +62,7 @@ describe('Config API', () => {
 
     expect(response.status).toBe(200);
     expect(data).toEqual({
+      API_URL_CDS_FRONT: 'http://localhost:3001/frontend-api/',
       TIMEOUT_SECONDS: '10',
       TIME_ROTATE_IMAGE_S: '15',
       FAILED_MEDIA_COOLDOWN_S: '20',
@@ -68,6 +72,7 @@ describe('Config API', () => {
   });
 
   it('should support NEXT_PUBLIC env fallback', async () => {
+    process.env.NEXT_PUBLIC_API_URL_CDS_FRONT = 'http://localhost:3001/public-frontend-api/';
     process.env.NEXT_PUBLIC_TIMEOUT_SECONDS = '11';
     process.env.NEXT_PUBLIC_TIME_ROTATE_IMAGE_S = '16';
     process.env.NEXT_PUBLIC_FAILED_MEDIA_COOLDOWN_S = '21';
@@ -78,10 +83,12 @@ describe('Config API', () => {
     const data = await response.json();
 
     expect(response.status).toBe(200);
+    expect(data.API_URL_CDS_FRONT).toBe('http://localhost:3001/public-frontend-api/');
     expect(data.API_URL_CDS).toBe('http://localhost:3000/public-api/');
   });
 
   it('should return 500 if runtime config is incomplete', async () => {
+    process.env.API_URL_CDS_FRONT = 'http://localhost:3001/frontend-api/';
     process.env.TIMEOUT_SECONDS = '10';
     process.env.TIME_ROTATE_IMAGE_S = '15';
     process.env.FAILED_MEDIA_COOLDOWN_S = '20';

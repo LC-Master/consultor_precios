@@ -5,6 +5,7 @@ declare module "bun" {
     URL_CONSULTA_PRECIO: string;
     TIMEOUT_SECONDS: number;
     TIME_ROTATE_IMAGE_S: number;
+    API_URL_CDS_FRONT: string;
     CDS_RETRY_SECONDS: number;
     API_URL_CDS: string;
     DATABASE_URL: string;

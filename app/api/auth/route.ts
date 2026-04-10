@@ -16,7 +16,9 @@ export async function GET() {
         const data = await response.json();
         return NextResponse.json(data);
     } catch (error) {
-        logger.error("Error during handshake:", error);
+        logger.error({message: "Error during handshake",
+             error
+        });
         return NextResponse.json({ error: "Error during handshake" }, { status: 500 });
     }
 }

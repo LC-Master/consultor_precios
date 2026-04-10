@@ -6,9 +6,6 @@
       "dom.iterable",
       "esnext",
     ],
-    "types": [
-      "@serwist/next/typings"
-    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -40,9 +37,6 @@
     "**/*.mts"
   ],
   "exclude": [
-    "app/sw.ts",
     "node_modules",
-    "public/sw*",
-    "public/swe-worker*"
   ]
 }

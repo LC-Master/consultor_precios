@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { codeSchema } from "@/app/schemas/code.schema";
 import { IProduct, productSchema } from "@/app/schemas/product.schema";
 import { NextRequest, NextResponse } from "next/server";
@@ -49,7 +51,7 @@ export async function GET(request: NextRequest) {
 
     try {
         logger.info({ message: "Executing stored procedure", code: parsedCode.data });
-        const result = await pool.request()
+        const result = await (await pool).request()
             .input('sCo_Art', sql.NVarChar, parsedCode.data)
             .execute('[dbo].spConsultaPrecioJson');
 

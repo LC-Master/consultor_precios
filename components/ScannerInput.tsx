@@ -1,5 +1,5 @@
 import { Input } from "@/components/ui/Input";
-import { RefObject, ChangeEvent, KeyboardEvent } from "react";
+import { RefObject, ChangeEvent, KeyboardEvent, useEffect } from "react";
 
 interface ScannerInputProps {
     inputRef: RefObject<HTMLInputElement | null>;
@@ -9,6 +9,14 @@ interface ScannerInputProps {
 }
 
 export function ScannerInput({ inputRef, code, onChange, onEnter }: ScannerInputProps) {
+    useEffect(() => {
+        const focusInput = () => inputRef.current?.focus();
+        focusInput();
+        const timeoutId = setTimeout(focusInput, 0);
+
+        return () => clearTimeout(timeoutId);
+    }, [inputRef]);
+
     return (
         <div className="fixed inset-0 z-40 opacity-0 w-0 h-0 overflow-hidden pointer-events-none">
             <Input
@@ -16,6 +24,7 @@ export function ScannerInput({ inputRef, code, onChange, onEnter }: ScannerInput
                 type="text"
                 inputMode="numeric"
                 autoComplete="off"
+                autoFocus
                 value={code}
                 onChange={onChange}
                 onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {

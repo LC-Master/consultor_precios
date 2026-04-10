@@ -6,6 +6,8 @@ import useAppStore from '../store/useAppStore';
 
 export function usePlaylist() {
     const { config, isConfigLoaded, configError } = useAppStore()
+    const urlBase = useAppStore((s) => s.config.API_URL_CDS_FRONT);
+
     const [playlist, setPlaylist] = useState<PlaylistData>({ campaigns: [] });
     const latestPlaylistRef = useRef<PlaylistData>({ campaigns: [] });
     const eventSourceRef = useRef<EventSource | null>(null);
@@ -21,17 +23,16 @@ export function usePlaylist() {
 
     useEffect(() => {
         if (!isConfigLoaded || configError) return;
-
-        const eventUrl = new URL("events", config.API_URL_CDS);
-        const authUrl = new URL("auth/login/device", config.API_URL_CDS);
-        const mediaBaseUrl = new URL("media/", config.API_URL_CDS).toString();
+        const eventUrl = new URL("events", urlBase);
+        const authUrl = new URL("auth/login/device", urlBase);
+        const mediaBaseUrl = new URL("media/", urlBase).toString();
 
         const PLAYLIST_POLL_MS = 5 * 60 * 1000;
         const CLIENT_REFRESH_THROTTLE_MS = 90 * 1000;
 
         const fetchPlaylist = async () => {
             try {
-                const resp = await fetchWithAuth<ApiPlaylistRoot>(new URL(config.API_URL_CDS + "playlist"));
+                const resp = await fetchWithAuth<ApiPlaylistRoot>(new URL(urlBase + "playlist"));
 
                 if (resp) {
                     const normalizeFileType = (fileType?: string, fallback = 'jpg') => {

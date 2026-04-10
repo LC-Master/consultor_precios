@@ -1,0 +1,14 @@
+name: Build Consultant Docker Image
+on:
+  push:
+    branches: [dev/pre_production]
+
+jobs:
+  build:
+    runs-on: [self-hosted, Linux_Locatel_Dev]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Docker Build and Push
+        run: bun install
+      - name: Build and Push Docker Image
+        run: docker build -t consultant:v1 -f docker/Dockerfile .

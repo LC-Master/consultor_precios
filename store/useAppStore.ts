@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 interface Config {
+	API_URL_CDS_FRONT: string;
 	TIMEOUT_SECONDS: string;
 	TIME_ROTATE_IMAGE_S: string;
 	FAILED_MEDIA_COOLDOWN_S: string;
@@ -18,6 +19,7 @@ interface AppState {
 }
 
 const defaultConfig = (): Config => ({
+	API_URL_CDS_FRONT: '',
 	TIMEOUT_SECONDS: '',
 	TIME_ROTATE_IMAGE_S: '',
 	FAILED_MEDIA_COOLDOWN_S: '',

@@ -5,6 +5,7 @@ import { logger } from '@/lib/logger';
 export const dynamic = 'force-dynamic';
 
 const publicConfigSchema = z.object({
+  API_URL_CDS_FRONT: z.string().url(),
   TIMEOUT_SECONDS: z.string().min(1),
   TIME_ROTATE_IMAGE_S: z.string().min(1),
   FAILED_MEDIA_COOLDOWN_S: z.string().min(1),
@@ -16,6 +17,7 @@ const getEnvValue = (key: string) => process.env[key] ?? process.env[`NEXT_PUBLI
 
 export async function GET() {
   const candidateConfig = {
+    API_URL_CDS_FRONT: getEnvValue('API_URL_CDS_FRONT'),
     TIMEOUT_SECONDS: getEnvValue('TIMEOUT_SECONDS'),
     TIME_ROTATE_IMAGE_S: getEnvValue('TIME_ROTATE_IMAGE_S'),
     FAILED_MEDIA_COOLDOWN_S: getEnvValue('FAILED_MEDIA_COOLDOWN_S'),
