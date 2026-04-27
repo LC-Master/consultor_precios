@@ -24,6 +24,7 @@ export interface StandbyViewProps {
   playlist: PlaylistData;
   isActive?: boolean;
   videoOnly?: boolean;
+  overlay?: boolean;
 }
 
 export interface ApiPlaylistRoot {

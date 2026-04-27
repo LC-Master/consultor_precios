@@ -18,7 +18,7 @@ export default function FullscreenVideosUI() {
     return (
       <main className="h-full w-full bg-black flex items-center justify-center p-6">
         <div className="max-w-lg rounded-3xl bg-white shadow-xl border border-slate-200 p-6 text-center">
-          <h2 className="text-2xl font-extrabold text-slate-800">Configuracion no disponible</h2>
+          <h2 className="text-2xl font-extrabold text-slate-800">Configuración no disponible</h2>
           <p className="mt-3 text-slate-600">{configError}</p>
         </div>
       </main>
@@ -28,7 +28,7 @@ export default function FullscreenVideosUI() {
   return (
     <main className="h-full w-full bg-black">
       <div className="fixed inset-0 z-50 bg-black">
-        <StandbyView playlist={playlist} isActive videoOnly />
+        <StandbyView playlist={playlist} isActive overlay={false} />
       </div>
     </main>
   );

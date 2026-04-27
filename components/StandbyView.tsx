@@ -10,7 +10,7 @@ import FallBackPost from './ui/FallBackPost';
 import PosImageCarousel from './ui/PosImageCarousel';
 import useAppStore from '@/store/useAppStore';
 
-export default function StandbyView({ playlist, isActive = true, videoOnly = false }: StandbyViewProps) {
+export default function StandbyView({ playlist, isActive = true, videoOnly = false, overlay = false }: StandbyViewProps) {
     const config = useAppStore((s) => s.config);
     const configuredCooldownSeconds = Number(config.FAILED_MEDIA_COOLDOWN_S);
     const FAILED_MEDIA_COOLDOWN_MS = Number.isFinite(configuredCooldownSeconds) && configuredCooldownSeconds > 0
@@ -360,7 +360,7 @@ export default function StandbyView({ playlist, isActive = true, videoOnly = fal
                     )}
 
                     {/* Standard Info Overlay (disabled for POS/video-only mode) */}
-                    {!videoOnly && <InfoOverlay />}
+                    {overlay && <InfoOverlay />}
                 </div>
             )
         }
@@ -399,7 +399,7 @@ export default function StandbyView({ playlist, isActive = true, videoOnly = fal
                             handleNextMain();
                         }}
                     />
-                    {!videoOnly && <InfoOverlay />}
+                    {overlay && <InfoOverlay />}
                 </div>
             );
         }
@@ -493,7 +493,7 @@ export default function StandbyView({ playlist, isActive = true, videoOnly = fal
                 </div>
             </div>
 
-            {!videoOnly && <InfoOverlay />}
+            {overlay && <InfoOverlay />}
         </div>
     );
 }

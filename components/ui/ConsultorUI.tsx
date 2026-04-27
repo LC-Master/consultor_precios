@@ -61,7 +61,7 @@ export default function ConsultorUI() {
 
       {/* Standby View (Ads) - solo cuando hay contenido remoto (playlist o placeholder CDS) */}
       <div className={`fixed inset-0 z-50 transition-opacity duration-500 ${showStandbyLayer ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
-        <StandbyView playlist={playlist} isActive={showStandbyLayer} />
+        <StandbyView playlist={playlist} isActive={showStandbyLayer} overlay={true} />
       </div>
 
       {/* Scanner Input - Active UI & Default Placeholder UI */}

@@ -9,10 +9,12 @@ FROM node:25.9.0-slim AS production
 RUN useradd -ms /bin/bash consultant
 WORKDIR /home/consultant
 
-COPY --chown=consultant:consultant --from=builder /home/consultant/storage ./storage
 COPY --chown=consultant:consultant --from=builder /home/consultant/.next/standalone ./
 COPY --chown=consultant:consultant --from=builder /home/consultant/.next/static ./.next/static
 COPY --chown=consultant:consultant --from=builder /home/consultant/public ./public
+
+RUN mkdir -p /home/consultant/storage/webp && \
+    chown -R consultant:consultant /home/consultant/storage
 
 USER consultant
 ENTRYPOINT ["node"]
