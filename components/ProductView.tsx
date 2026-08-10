@@ -23,7 +23,7 @@ export default function ProductView({ product, inputRef }: { product: Product, i
 
     // image source with fallback on error
     const [imgSrc, setImgSrc] = useState(`/api/images/${product.articleCode}.webp`);
-
+    console.log("ProductView render", { product, hasPromotion, priceBs, oldPriceBs, priceRef, oldPriceRef });
     return (
         <div
             className="w-full max-w-[95vw] md:max-w-8xl bg-white rounded-2xl shadow-2xl shadow-slate-200 overflow-hidden flex flex-col md:flex-row max-h-[92vh] border border-slate-100 grow hover:scale-105 transition-transform duration-500"
@@ -170,9 +170,11 @@ export default function ProductView({ product, inputRef }: { product: Product, i
 
                             {/* Fecha Vigencia */}
                             <div className="flex flex-col">
-                                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter leading-tight">Vence</span>
+                                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter leading-tight">Fecha valida</span>
                                 <span className="text-[11px] font-bold text-slate-600 tabular-nums leading-none">
-                                    {product.rate?.validDate ? new Date(product.rate.validDate).toLocaleDateString() : 'N/A'}
+                                    {product.rate?.validDate
+                                        ? new Date(product.rate.validDate).toLocaleDateString('es-ES', { timeZone: 'UTC' })
+                                        : 'N/A'}
                                 </span>
                             </div>
 

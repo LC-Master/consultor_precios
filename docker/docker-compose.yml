@@ -1,74 +1,107 @@
-name: locatel-consultant
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
 
 services:
   nginx:
     image: nginx:latest
-    container_name: locatel-pr
     ports:
       - "443:443"
       - "80:80"
     volumes:
-      - ./certs:/etc/nginx/ssl:ro
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - /home/desarrollo/docker/certs:/etc/nginx/ssl:ro
+      - /home/desarrollo/docker/nginx.conf:/etc/nginx/nginx.conf:ro
     networks:
       - backend-net
-    depends_on:
-      cds:
-        condition: service_healthy
-      consultant:
-        condition: service_healthy
-    logging: &default-logging
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-    restart: always
+    logging: *default-logging
+    deploy:
+      restart_policy:
+        condition: any
 
   cds:
     image: cds:latest
-    container_name: cds
-    env_file: .env.cds
+    environment:
+      - SECRET_KEY=${CDS_SECRET_KEY}
+      - API_KEY_CMS=${CDS_API_KEY_CMS}
+      - CMS_BASE_URL=${CDS_CMS_BASE_URL}
+      - PORT=${CDS_PORT}
+      - SERVER_NEXT_PUBLIC_PRICE_CHECKER_URL=${CDS_SERVER_URL}
+      - DATABASE_URL=${CDS_DATABASE_URL}
+      - DB_USER=${CDS_DB_USER}
+      - DB_PASSWORD=${CDS_DB_PASSWORD}
+      - DB_NAME=${CDS_DB_NAME}
+      - DB_HOST=${CDS_DB_HOST}
+      - DB_PORT=${CDS_DB_PORT}
+      - SYNC_TTL_HOURS=${CDS_SYNC_TTL}
+      - DOWNLOAD_CONCURRENCY=${CDS_DOWNLOAD_CONCURRENCY}
+      - FETCH_TIMEOUT_SECONDS=${CDS_TIMEOUT}
+      - MASTER_KEY=${CDS_MASTER_KEY}
     networks:
       - backend-net
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    logging: *default-logging
     deploy:
+      replicas: 1
       resources:
         limits:
           cpus: '0.50'
           memory: 512M
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
-      interval: 15s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
-    logging: *default-logging
-    restart: always
+      update_config:
+        order: start-first
+        failure_action: rollback
+        delay: 5s
+      restart_policy:
+        condition: on-failure
+        delay: 5s
 
   consultant:
-    image: consultant:latest
-    container_name: consultant
-    env_file: .env.consultant
+    image: consultant:v1.0.0
+    environment:
+      - API_URL_CDS_FRONT=${CONS_API_FRONT}
+      - TIMEOUT_SECONDS=${CONS_TIMEOUT}
+      - TIME_ROTATE_IMAGE_S=${CONS_ROTATE_S}
+      - FAILED_MEDIA_COOLDOWN_S=${CONS_COOLDOWN}
+      - CDS_RETRY_SECONDS=${CONS_RETRY}
+      - API_URL_CDS=${CONS_API_URL_CDS}
+      - DATABASE_URL=${CONS_DATABASE_URL}
+      - DB_PASSWORD=${CONS_DB_PASSWORD}
+      - DB_NAME=${CONS_DB_NAME}
+      - DB_USER=${CONS_DB_USER}
+      - DB_HOST=${CONS_DB_HOST}
+      - DB_PORT=${CONS_DB_PORT}
+      - MASTER_KEY=${CONS_MASTER_KEY}
+      - NODE_ENV=${CONS_NODE_ENV}
+      - PORT=${CONS_PORT}
     networks:
       - backend-net
-    depends_on:
-      cds:
-        condition: service_healthy
-    deploy:
-      resources:
-        limits:
-          cpus: '0.50'
-          memory: 512M
+    volumes:
+      - /home/desarrollo/docker/storage/webp:/home/consultant/storage/webp:rw
+    logging: *default-logging
+
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/api/health"]
-      interval: 15s
+      test: [ "CMD", "curl", "-f", "http://localhost:3001/check" ]
+      interval: 10s
       timeout: 5s
       retries: 3
       start_period: 15s
-    logging: *default-logging
-    restart: always
+
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+      update_config:
+        order: start-first
+        failure_action: rollback
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+        delay: 5s
 
 networks:
   backend-net:
-    driver: bridge
+    driver: overlay
