@@ -3,8 +3,7 @@ export const dynamic = 'force-dynamic';
 import { codeSchema } from "@/app/schemas/code.schema";
 import { IProduct, productSchema } from "@/app/schemas/product.schema";
 import { NextRequest, NextResponse } from "next/server";
-import sql from 'mssql';
-import { pool } from "@/src/provider/pool.provider";
+import { db } from "@/src/provider/db";
 import { normalizeProduct } from "@/lib/normalizeProduct";
 import { logger } from "@/lib/logger";
 import isRateLimited from "@/lib/rateLimit";
@@ -51,11 +50,13 @@ export async function GET(request: NextRequest) {
 
     try {
         logger.info({ message: "Executing stored procedure", code: parsedCode.data });
-        const result = await (await pool).request()
-            .input('sCo_Art', sql.NVarChar, parsedCode.data)
-            .execute('[dbo].spConsultaPrecioJson');
-
-        const row = result.recordset[0];
+        const result = await db.execute((pool) =>
+            pool
+                .request()
+                .input("sCo_Art", parsedCode.data)
+                .execute("[dbo].spConsultaPrecioJson")
+        );
+        const row = result.recordset?.[0];
         if (!row) {
             logger.warn({ message: "Product not found", code: parsedCode.data });
             return NextResponse.json({ error: "Product not found" }, { status: 404 });
@@ -82,6 +83,14 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(resultProcessed, { status: 200 });
 
     } catch (error: unknown) {
+        if (error instanceof Error && error.message === "DATABASE_UNAVAILABLE") {
+            logger.error({ message: "Database Unavailable", error: error.message });
+            return NextResponse.json(
+                { error: "DATABASE_UNAVAILABLE", message: "Servicio no disponible temporalmente. Intente de nuevo en breve." },
+                { status: 503 }
+            );
+        }
+
         if (error instanceof Error) {
             logger.error({ message: "Server Error", error: error.message });
         } else {

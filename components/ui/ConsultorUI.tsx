@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useEffect, useState } from "react";
 import Loading from "@/components/ui/Loading";
@@ -87,7 +87,12 @@ export default function ConsultorUI() {
 
       {error && (
         <div className="absolute inset-0 z-30 flex items-center justify-center">
-          <ErrorView message={error} onClose={() => setError(null)} inputRef={inputRef} />
+          <ErrorView
+            title={error.includes("interrupción") ? "Servicio No Disponible" : undefined}
+            message={error}
+            onClose={() => setError(null)}
+            inputRef={inputRef}
+          />
         </div>
       )}
     </main>

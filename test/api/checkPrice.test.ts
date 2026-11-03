@@ -1,7 +1,7 @@
-﻿import { describe, it, beforeAll, spyOn, expect } from "bun:test"
+import { describe, it, beforeAll, spyOn, expect } from "bun:test"
 import { GET } from "../../app/api/check-price/route";
 import { NextRequest } from "next/server";
-import { pool } from "@/src/provider/pool.provider";
+import { db } from "@/src/provider/db";
 
 const JSON_COLUMN_NAME = "JSON_F52E2B61-18A1-11d1-B105-00805F49916B";
 const baseProductPayload = {
@@ -26,24 +26,20 @@ const baseProductPayload = {
 };
 
 function mockProductRecord(overrides: Record<string, unknown> = {}) {
-    spyOn(pool, "request").mockReturnValue({
-        input: () => ({
-            execute: async () => ({
-                recordset: [
-                    {
-                        [JSON_COLUMN_NAME]: JSON.stringify({
-                            ...baseProductPayload,
-                            ...overrides,
-                        }),
-                    },
-                ],
-                recordsets: [],
-                rowsAffected: [],
-                output: {},
-                returnValue: 0,
-            }),
-        }),
-    } as unknown as ReturnType<typeof pool.request>);
+    spyOn(db, "execute").mockImplementation(async () => ({
+        recordset: [
+            {
+                [JSON_COLUMN_NAME]: JSON.stringify({
+                    ...baseProductPayload,
+                    ...overrides,
+                }),
+            },
+        ],
+        recordsets: [],
+        rowsAffected: [],
+        output: {},
+        returnValue: 0,
+    } as any));
 }
 
 describe("checkPrice API validations tests", () => {
@@ -55,21 +51,6 @@ describe("checkPrice API validations tests", () => {
         expect(data).toEqual({ error: "Invalid code parameter" });
     });
     it("should return 400 for invalid code parameter", async () => {
-        spyOn(pool, "request").mockReturnValue({
-            input: () => ({
-                execute: async () => ({
-                    recordset: [
-                        {
-                            'JSON_F52E2B61-18A1-11d1-B105-00805F49916B': '{"CodArticulo":"2103931","CodBarra":"7591440409094                 ","Bloqueado":false,"Descripcion":"ELEMENTAL CREMA CORP TE VER PE","PrecioBase":2236.5100,"PctIva":1.6000000e+001,"MontoIva":3.578400000000000e+002,"PrecioIva":2.594350000000000e+003,"PrecioRef":7.130000000000000e+000,"Tasa":3.636600000000000e+002,"TasaEuro":4.344300000000000e+002,"NomProm":"Descuento 30%","PrecioBaseProm":1.565560000000000e+003,"MontoIvaProm":2.504900000000000e+002,"PrecioIVAProm":1.816050000000000e+003,"PrecioRefProm":4.990000000000000e+000,"PorcDesc":3.000000000000000e+001}'
-                        }
-                    ],
-                    recordsets: [],
-                    rowsAffected: [],
-                    output: {},
-                    returnValue: 0,
-                })
-            })
-        } as unknown as ReturnType<typeof pool.request>);
         const request = new NextRequest("http://localhost/api/check-price?code=invalid_code");
         const response = await GET(request);
         const data = await response.json();
@@ -77,17 +58,13 @@ describe("checkPrice API validations tests", () => {
         expect(data).toEqual({ error: "Invalid code parameter" });
     });
     it("should return 404 for non-existent product", async () => {
-        spyOn(pool, "request").mockReturnValue({
-            input: () => ({
-                execute: async () => ({
-                    recordset: [],
-                    recordsets: [],
-                    rowsAffected: [],
-                    output: {},
-                    returnValue: 0,
-                })
-            })
-        } as unknown as ReturnType<typeof pool.request>);
+        spyOn(db, "execute").mockImplementation(async () => ({
+            recordset: [],
+            recordsets: [],
+            rowsAffected: [],
+            output: {},
+            returnValue: 0,
+        } as any));
         const request = new NextRequest("http://localhost/api/check-price?code=2103931");
         const response = await GET(request);
         const data = await response.json();
@@ -139,8 +116,24 @@ describe("checkPrice API validations tests", () => {
         expect(data).toEqual({ error: "Invalid product data structure" });
     });
 
+    it("should return 503 when database is unavailable", async () => {
+        spyOn(db, "execute").mockImplementation(async () => {
+            throw new Error("DATABASE_UNAVAILABLE");
+        });
+
+        const request = new NextRequest("http://localhost/api/check-price?code=7591440409094");
+        const response = await GET(request);
+        const data = await response.json();
+
+        expect(response.status).toBe(503);
+        expect(data).toEqual({
+            error: "DATABASE_UNAVAILABLE",
+            message: "Servicio no disponible temporalmente. Intente de nuevo en breve."
+        });
+    });
+
     it("should return 500 on server errors", async () => {
-        spyOn(pool, "request").mockImplementation(() => {
+        spyOn(db, "execute").mockImplementation(async () => {
             throw new Error("db down");
         });
 

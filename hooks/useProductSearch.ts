@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, ChangeEvent, useMemo } from 'react';
 import ms from "ms";
 import type { Product } from "@/types/product.type";
-import getProduct from "@/lib/getProduct";
+import getProduct, { ApiError } from "@/lib/getProduct";
 import useAppStore from '@/store/useAppStore';
 
 export function useProductSearch() {
@@ -62,8 +62,12 @@ export function useProductSearch() {
       const data = await getProduct<Product>(searchCode);
       setProduct(data);
       scheduleHide();
-    } catch {
-      setError("No pudimos encontrar información para este código. Por favor verifique e intente nuevamente.");
+    } catch (err: unknown) {
+      if (err instanceof ApiError && (err.status === 503 || err.code === "DATABASE_UNAVAILABLE")) {
+        setError("El servicio presenta interrupción, intente más tarde, gracias");
+      } else {
+        setError("No pudimos encontrar información para este código. Por favor verifique e intente nuevamente.");
+      }
       scheduleHide();
     } finally {
       setLoading(false);

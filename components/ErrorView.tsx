@@ -3,12 +3,13 @@ import ms from "ms";
 import { useEffect } from "react";
 
 interface ErrorViewProps {
+    title?: string;
     message?: string;
     onClose: () => void;
     inputRef?: React.RefObject<HTMLInputElement | null>;
 }
 
-export default function ErrorView({ message, onClose, inputRef }: ErrorViewProps) {
+export default function ErrorView({ title, message, onClose, inputRef }: ErrorViewProps) {
     useEffect(() => {
         const timer = setTimeout(() => {
             onClose();
@@ -31,7 +32,7 @@ export default function ErrorView({ message, onClose, inputRef }: ErrorViewProps
                 </div>
                 <div>
                     <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-800 mb-3 tracking-tight">
-                        No encontrado
+                        {title || "No encontrado"}
                     </h3>
                     <p className="text-base sm:text-lg text-slate-500 font-medium leading-relaxed">
                         {message || "El producto consultado no se encuentra en sistema."}

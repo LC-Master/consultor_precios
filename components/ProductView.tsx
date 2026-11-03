@@ -9,24 +9,17 @@ export default function ProductView({ product, inputRef }: { product: Product, i
 
     const hasPromotion = !!product.promotion;
     const promotionLabel = product.promotion?.name?.trim() || "Descuento Especial";
-    // According to types provided:
-    // Prices struct has: base, tax, priceWithTax, referencePrice
-    // Promotion struct has: name, basePrice, priceWithTax, referencePrice, discountPercentage, savings
-
     const priceBs = hasPromotion ? product.promotion!.priceWithTax : product.prices.priceWithTax;
     const oldPriceBs = product.prices.priceWithTax;
 
     const priceRef = hasPromotion ? product.promotion!.referencePrice : product.prices.referencePrice;
-
-    // Ensure we handle oldPriceRef properly, falling back to base referencePrice if null
     const oldPriceRef = product.prices.referencePrice;
 
-    // image source with fallback on error
     const [imgSrc, setImgSrc] = useState(`/api/images/${product.articleCode}.webp`);
     console.log("ProductView render", { product, hasPromotion, priceBs, oldPriceBs, priceRef, oldPriceRef });
     return (
         <div
-            className="w-full max-w-[95vw] md:max-w-8xl bg-white rounded-2xl shadow-2xl shadow-slate-200 overflow-hidden flex flex-col md:flex-row max-h-[92vh] border border-slate-100 grow hover:scale-105 transition-transform duration-500"
+            className="w-full max-w-[95vw] md:max-w-8xl bg-white rounded-2xl shadow-2xl shadow-slate-200 overflow-hidden flex flex-col md:flex-row max-h-[92vh] border border-slate-100 grow transition-transform duration-500"
             onClick={(e) => {
                 e.stopPropagation();
                 inputRef?.current?.focus();
@@ -40,7 +33,7 @@ export default function ProductView({ product, inputRef }: { product: Product, i
                         alt={product.description || "Producto"}
                         onError={() => setImgSrc('/locatel.webp')}
                         fill={true}
-                        className="object-contain p-2 mix-blend-multiply transition-transform duration-500 hover:scale-105"
+                        className="object-contain p-2 mix-blend-multiply transition-transform duration-500"
                         priority={true}
                     />
                 </div>
@@ -62,8 +55,13 @@ export default function ProductView({ product, inputRef }: { product: Product, i
                     <h2 className="text-2xl md:text-2xl font-extrabold text-slate-800 leading-tight wrap-break-words hyphens-auto">
                         {product.description || "Artículo"}
                     </h2>
-                    <div className="text-slate-400 font-medium mt-0.5 text-xs">
-                        Código: {product.articleCode}
+                    <div className="flex flex-row gap-2 mt-2">
+                        <div className="text-slate-400 font-medium mt-0.5 text-xs">
+                            Código: {product.articleCode}
+                        </div>
+                        <div className="text-slate-400 font-medium mt-0.5 text-xs">
+                            Código de barra: {product.barCode}
+                        </div>
                     </div>
                 </div>
 
@@ -107,7 +105,7 @@ export default function ProductView({ product, inputRef }: { product: Product, i
                             </div>
                         </div>
                         {hasPromotion && (
-                            <span className="text-[10px] font-bold text-white/70 mt-0.5">PRECIO REF PROM</span>
+                            <span className="text-[10px] font-bold text-white/70 mt-0.5">PRECIO REF PROM SIN IVA</span>
                         )}
                     </div>
 
@@ -120,71 +118,72 @@ export default function ProductView({ product, inputRef }: { product: Product, i
                     </div>
                 )}
 
-                <div className={`grid gap-2 ${hasPromotion ? "grid-cols-4" : "grid-cols-3"}`}>
-                    {!hasPromotion && (
-                        <div className="p-2 bg-slate-50 rounded-lg border border-slate-100">
-                            <span className="block text-[7px] font-black text-slate-400 uppercase tracking-tighter mb-0.5">Precio Base</span>
-                            <span className="text-[10px] font-bold text-slate-700 leading-none truncate block">
-                                {formatMoney(product.prices.base, "Bs")}
-                            </span>
-                        </div>
-                    )}
+                <div className="mt-auto pt-4 flex items-center justify-between gap-4">
 
+                    <div className="flex items-center gap-3">
+                        {hasPromotion ? (
+                            <div className="flex flex-col text-left">
+                                <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider leading-none">
+                                    Base Promocional (Sin IVA)
+                                </span>
+                                <span className="text-sm font-black tabular-nums leading-tight mt-0.5">
+                                    {formatMoney(product.promotion?.basePrice, "Bs")}
+                                </span>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col text-left">
+                                <span className="text-[8px] font-medium text-slate-400 uppercase tracking-wider leading-none">
+                                    Base (Sin IVA)
+                                </span>
+                                <span className="text-sm font-bold text-slate-700 tabular-nums leading-tight mt-0.5">
+                                    {formatMoney(product.prices?.base, "Bs")}
+                                </span>
+                            </div>
+                        )}
+                    </div>
 
-                    {hasPromotion && (
-                        <div className="p-2 bg-slate-50 rounded-lg border border-slate-100">
-                            <span className="block text-[7px] font-black text-slate-400 uppercase tracking-tighter mb-0.5">Precio Base Prom</span>
-                            <span className="text-[10px] font-bold text-slate-700 leading-none truncate block">
-                                {formatMoney(product.promotion?.basePrice, "Bs")}
-                            </span>
-                        </div>
-                    )}
-                    {/* <div className="p-2 bg-slate-50 rounded-lg border border-slate-200 shadow-sm relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-3 h-3 bg-slate-200 rounded-bl-full"></div>
-                        <span className="block text-[7px] font-black text-slate-500 uppercase tracking-tighter mb-0.5 relative z-10">IVA ({product.prices.tax}%)</span>
-                        <span className="text-[10px] font-bold text-slate-800 leading-none truncate block relative z-10">
-                            {formatMoney(hasPromotion ? product.promotion?.taxAmount : product.prices.taxAmount, "Bs")}
-                        </span>
-                    </div> */}
-                </div>
+                    <div className="flex items-center gap-4 text-right">
 
-                <div className="mt-auto pt-3 border-t border-slate-100 flex items-center justify-between">
-                    <div className="flex justify-end mt-3">
-                        <div className="flex items-center gap-4 bg-slate-100/80 border border-slate-200 p-1.5 px-4 rounded-lg shadow-sm">
-
-                            {/* Tasa USD */}
-                            <div className="flex flex-col border-r border-slate-300 pr-4 last:border-0 last:pr-0">
-                                <span className="text-[8px] font-bold text-slate-500 uppercase tracking-tighter leading-tight">Tasa BCV USD</span>
-                                <span className="text-[13px] font-black text-slate-800 tabular-nums leading-none">
+                        <div className="flex items-center gap-2">
+                            <div className="flex flex-col">
+                                <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider leading-none">
+                                    BCV USD
+                                </span>
+                                <span className="text-xs font-bold text-slate-900 tabular-nums leading-tight mt-0.5">
                                     {formatMoney(product.rate?.dollar, "Bs")}
                                 </span>
                             </div>
+                        </div>
 
-                            {/* Tasa EURO */}
-                            <div className="flex flex-col border-r border-slate-300 pr-4 last:border-0 last:pr-0">
-                                <span className="text-[8px] font-bold text-slate-500 uppercase tracking-tighter leading-tight">Tasa BCV EURO</span>
-                                <span className="text-[13px] font-black text-slate-800 tabular-nums leading-none">
+                        <div className="h-6 border-l border-slate-200" aria-hidden="true" />
+
+                        <div className="flex items-center gap-2">
+                            <div className="flex flex-col">
+                                <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider leading-none">
+                                    BCV EUR
+                                </span>
+                                <span className="text-xs font-bold text-slate-900 tabular-nums leading-tight mt-0.5">
                                     {formatMoney(product.rate?.euro, "Bs")}
                                 </span>
                             </div>
-
-                            {/* Fecha Vigencia */}
-                            <div className="flex flex-col">
-                                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter leading-tight">Fecha valida</span>
-                                <span className="text-[11px] font-bold text-slate-600 tabular-nums leading-none">
-                                    {product.rate?.validDate
-                                        ? new Date(product.rate.validDate).toLocaleDateString('es-ES', { timeZone: 'UTC' })
-                                        : 'N/A'}
-                                </span>
-                            </div>
-
                         </div>
-                    </div>
-                    <div className="text-[11px] text-slate-400 font-medium">
-                        {product.barCode}
+
+                        <div className="h-6 border-l border-slate-200" aria-hidden="true" />
+
+                        <div className="flex flex-col text-left">
+                            <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider leading-none">
+                                Fecha valida
+                            </span>
+                            <span className="text-xs font-medium text-slate-600 tabular-nums leading-tight mt-0.5">
+                                {product.rate?.validDate
+                                    ? new Date(product.rate.validDate).toLocaleDateString('es-ES', { timeZone: 'UTC' })
+                                    : 'N/A'}
+                            </span>
+                        </div>
+
                     </div>
                 </div>
             </div>
         </div>
-    )
+    );
 }
